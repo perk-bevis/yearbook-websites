@@ -1,45 +1,50 @@
-# [Project name]
+# Kỷ Yếu Lớp 9A — THCS Vũ Lăng (2016–2019)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Trang kỷ yếu điện tử cho lớp 9A trường THCS Vũ Lăng, niên khóa 2016–2019.
 
-## Run & Operate
+## Kiến trúc
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+| Tầng | Công nghệ |
+|------|-----------|
+| Frontend | React + Vite + TypeScript (Tailwind CSS 4, Framer Motion, shadcn/ui) |
+| Backend | Python FastAPI (uvicorn), psycopg2 |
+| Database | PostgreSQL (Replit managed) |
+| API Client | Orval codegen → TanStack Query hooks (`lib/api-client-react`) |
+| Routing (FE) | wouter |
+| Monorepo | pnpm workspaces |
 
-## Stack
+## Cấu trúc thư mục
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+```
+artifacts/
+  yearbook/          # Frontend React-Vite (preview path: /)
+  api-server/        # Backend FastAPI (preview path: /api)
+  mockup-sandbox/    # Canvas component preview server
+lib/
+  api-spec/          # openapi.yaml — nguồn sự thật cho API
+  api-client-react/  # Codegen TanStack Query hooks
+  api-zod/           # Codegen Zod schemas
+```
 
-## Where things live
+## Các trang
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `/` — Trang chủ (hero, thống kê, học sinh nổi bật, ký ức mới nhất)
+- `/students` — Danh sách tập thể 9A (tìm kiếm, badge vai trò, khung ảnh)
+- `/students/:id` — Trang cá nhân học sinh
+- `/gallery` — Album ảnh (lọc theo danh mục, lightbox)
+- `/memories` — Sổ lưu bút (ký ức dài dạng text)
+- `/events` — Dòng thời gian sự kiện
+- `/teachers` — Lời nhắn từ thầy cô
+- `/frames` — Cửa hàng khung ảnh (miễn phí & premium)
+- `/admin` — Bảng quản trị CRUD (học sinh, gallery, ký ức, sự kiện, thầy cô, khung ảnh)
 
-## Architecture decisions
+## Ghi chú kỹ thuật
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- `birth_date` và `event_date` trong DB lưu định dạng `"dd/MM/yyyy"` — phải dùng `parse(str, "dd/MM/yyyy", new Date())` từ `date-fns` thay vì `new Date(str)`.
+- Frame `image_url` chứa CSS gradient string; frontend render bằng CSS mask trick tạo vòng tròn trang trí quanh avatar.
+- Admin panel không có xác thực (mở hoàn toàn) — phù hợp cho nội bộ lớp.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Ngôn ngữ UI: Tiếng Việt, không dùng emoji.
+- Design: tươi sáng, ấm áp, font chữ tay (Caveat) cho tiêu đề, Plus Jakarta Sans cho nội dung.

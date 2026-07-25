@@ -3,20 +3,34 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Yearbook API - Kỷ Yếu Lớp 9A THCS Vũ Lăng 2016-2019
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: students
+    description: Student profiles
+  - name: gallery
+    description: Photo gallery
+  - name: memories
+    description: Shared memories
+  - name: events
+    description: Class events timeline
+  - name: teacher-messages
+    description: Messages from teachers
+  - name: frames
+    description: Avatar frames
+  - name: stats
+    description: Aggregated stats
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,497 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ────── STUDENTS ──────
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List all students
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Create a student profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Not found
+    put:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update a student profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete a student profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students/{id}/frame:
+    get:
+      operationId: getStudentActiveFrame
+      tags: [students]
+      summary: Get a student's active avatar frame
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active frame
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Frame"
+        "404":
+          description: No frame set
+    put:
+      operationId: setStudentFrame
+      tags: [students]
+      summary: Set active frame for a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentFrameInput"
+      responses:
+        "200":
+          description: Frame updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  # ────── GALLERY ──────
+  /gallery:
+    get:
+      operationId: listPhotos
+      tags: [gallery]
+      summary: List gallery photos
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+    post:
+      operationId: createPhoto
+      tags: [gallery]
+      summary: Add a photo to the gallery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+
+  /gallery/{id}:
+    delete:
+      operationId: deletePhoto
+      tags: [gallery]
+      summary: Delete a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ────── MEMORIES ──────
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [memories]
+      summary: List shared memories
+      responses:
+        "200":
+          description: List of memories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Memory"
+    post:
+      operationId: createMemory
+      tags: [memories]
+      summary: Create a memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memories/{id}:
+    get:
+      operationId: getMemory
+      tags: [memories]
+      summary: Get a memory by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Memory detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+    put:
+      operationId: updateMemory
+      tags: [memories]
+      summary: Update a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+    delete:
+      operationId: deleteMemory
+      tags: [memories]
+      summary: Delete a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ────── EVENTS ──────
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List class events (timeline)
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    put:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ────── TEACHER MESSAGES ──────
+  /teacher-messages:
+    get:
+      operationId: listTeacherMessages
+      tags: [teacher-messages]
+      summary: List messages from teachers
+      responses:
+        "200":
+          description: List of teacher messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeacherMessage"
+    post:
+      operationId: createTeacherMessage
+      tags: [teacher-messages]
+      summary: Add a teacher message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeacherMessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherMessage"
+
+  /teacher-messages/{id}:
+    put:
+      operationId: updateTeacherMessage
+      tags: [teacher-messages]
+      summary: Update a teacher message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeacherMessageUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherMessage"
+    delete:
+      operationId: deleteTeacherMessage
+      tags: [teacher-messages]
+      summary: Delete a teacher message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ────── FRAMES ──────
+  /frames:
+    get:
+      operationId: listFrames
+      tags: [frames]
+      summary: List all available avatar frames
+      responses:
+        "200":
+          description: List of frames
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Frame"
+    post:
+      operationId: createFrame
+      tags: [frames]
+      summary: Create a new frame (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrameInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Frame"
+
+  /frames/{id}/unlock:
+    post:
+      operationId: unlockFrame
+      tags: [frames]
+      summary: Unlock a premium frame for a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlockFrameInput"
+      responses:
+        "200":
+          description: Frame unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlockFrameResult"
+
+  # ────── STATS (WOW) ──────
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get overall yearbook stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +539,370 @@ components:
       required:
         - status
 
+    # ── Student ──
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nickname:
+          type: ["string", "null"]
+        photo_url:
+          type: ["string", "null"]
+        birth_date:
+          type: ["string", "null"]
+        hobbies:
+          type: ["string", "null"]
+        dream:
+          type: ["string", "null"]
+        message:
+          type: ["string", "null"]
+        role:
+          type: string
+          description: "student | monitor | vice_monitor"
+        active_frame_id:
+          type: ["integer", "null"]
+        created_at:
+          type: string
+      required:
+        - id
+        - name
+        - role
+        - created_at
+
+    StudentInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        nickname:
+          type: string
+        photo_url:
+          type: string
+        birth_date:
+          type: string
+        hobbies:
+          type: string
+        dream:
+          type: string
+        message:
+          type: string
+        role:
+          type: string
+      required:
+        - name
+
+    StudentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        nickname:
+          type: string
+        photo_url:
+          type: string
+        birth_date:
+          type: string
+        hobbies:
+          type: string
+        dream:
+          type: string
+        message:
+          type: string
+        role:
+          type: string
+
+    StudentFrameInput:
+      type: object
+      properties:
+        frame_id:
+          type: ["integer", "null"]
+      required:
+        - frame_id
+
+    # ── Photo ──
+    Photo:
+      type: object
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        caption:
+          type: ["string", "null"]
+        category:
+          type: string
+          description: "classmates | events | trips | teachers | other"
+        uploaded_by:
+          type: ["string", "null"]
+        created_at:
+          type: string
+      required:
+        - id
+        - url
+        - category
+        - created_at
+
+    PhotoInput:
+      type: object
+      properties:
+        url:
+          type: string
+          minLength: 1
+        caption:
+          type: string
+        category:
+          type: string
+        uploaded_by:
+          type: string
+      required:
+        - url
+        - category
+
+    # ── Memory ──
+    Memory:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        photo_url:
+          type: ["string", "null"]
+        author:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - title
+        - content
+        - author
+        - created_at
+
+    MemoryInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+        photo_url:
+          type: string
+        author:
+          type: string
+      required:
+        - title
+        - content
+        - author
+
+    MemoryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+        photo_url:
+          type: string
+        author:
+          type: string
+
+    # ── Event ──
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        event_date:
+          type: string
+        photo_url:
+          type: ["string", "null"]
+        created_at:
+          type: string
+      required:
+        - id
+        - title
+        - event_date
+        - created_at
+
+    EventInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        event_date:
+          type: string
+          minLength: 1
+        photo_url:
+          type: string
+      required:
+        - title
+        - event_date
+
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        event_date:
+          type: string
+        photo_url:
+          type: string
+
+    # ── TeacherMessage ──
+    TeacherMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        teacher_name:
+          type: string
+        subject:
+          type: ["string", "null"]
+        message:
+          type: string
+        photo_url:
+          type: ["string", "null"]
+        created_at:
+          type: string
+      required:
+        - id
+        - teacher_name
+        - message
+        - created_at
+
+    TeacherMessageInput:
+      type: object
+      properties:
+        teacher_name:
+          type: string
+          minLength: 1
+        subject:
+          type: string
+        message:
+          type: string
+          minLength: 1
+        photo_url:
+          type: string
+      required:
+        - teacher_name
+        - message
+
+    TeacherMessageUpdate:
+      type: object
+      properties:
+        teacher_name:
+          type: string
+          minLength: 1
+        subject:
+          type: string
+        message:
+          type: string
+          minLength: 1
+        photo_url:
+          type: string
+
+    # ── Frame ──
+    Frame:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        image_url:
+          type: string
+        description:
+          type: ["string", "null"]
+        is_free:
+          type: boolean
+        price_label:
+          type: ["string", "null"]
+          description: "Display label for premium frames e.g. '10.000đ'"
+        created_at:
+          type: string
+      required:
+        - id
+        - name
+        - image_url
+        - is_free
+        - created_at
+
+    FrameInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        image_url:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        is_free:
+          type: boolean
+        price_label:
+          type: string
+      required:
+        - name
+        - image_url
+
+    UnlockFrameInput:
+      type: object
+      properties:
+        student_id:
+          type: integer
+      required:
+        - student_id
+
+    UnlockFrameResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    # ── Stats ──
+    Stats:
+      type: object
+      properties:
+        student_count:
+          type: integer
+        photo_count:
+          type: integer
+        memory_count:
+          type: integer
+        event_count:
+          type: integer
+        teacher_message_count:
+          type: integer
+      required:
+        - student_count
+        - photo_count
+        - memory_count
+        - event_count
+        - teacher_message_count

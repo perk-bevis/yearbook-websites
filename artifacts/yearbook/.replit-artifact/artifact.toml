@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Kỷ Yếu Lớp 9A"
+version = "1.0.0"
+id = "artifacts/yearbook"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23468
+
+[services.development]
+run = "pnpm --filter @workspace/yearbook run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/yearbook", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/yearbook/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23468"
+BASE_PATH = "/"
