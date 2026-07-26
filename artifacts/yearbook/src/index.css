@@ -1,6 +1,8 @@
+@layer theme, base, clerk, components, utilities;
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Caveat:wght@600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@clerk/themes/shadcn.css';
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -47,41 +49,36 @@
 }
 
 :root {
-  /* Fresh tropical warmth: light cream background */
   --background: 40 33% 98%;
   --foreground: 20 20% 20%;
-  
+
   --card: 0 0% 100%;
   --card-foreground: 20 20% 20%;
   --card-border: 40 15% 92%;
-  
+
   --popover: 0 0% 100%;
   --popover-foreground: 20 20% 20%;
   --popover-border: 40 15% 92%;
-  
-  /* Primary: vibrant coral/flamboyant red */
+
   --primary: 9 85% 62%;
   --primary-foreground: 0 0% 100%;
-  
-  /* Secondary: bright morning blue */
+
   --secondary: 195 75% 85%;
   --secondary-foreground: 195 85% 25%;
-  
-  /* Muted: soft warm gray */
+
   --muted: 40 20% 94%;
   --muted-foreground: 25 15% 45%;
-  
-  /* Accent: sunny yellow */
+
   --accent: 42 95% 65%;
   --accent-foreground: 20 40% 15%;
-  
+
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  
+
   --border: 40 15% 90%;
   --input: 40 15% 90%;
   --ring: 9 85% 62%;
-  
+
   --radius: 1rem;
   --app-font-sans: 'Plus Jakarta Sans', sans-serif;
   --app-font-display: 'Caveat', cursive;
@@ -90,30 +87,30 @@
 .dark {
   --background: 20 15% 15%;
   --foreground: 40 20% 95%;
-  
+
   --card: 20 15% 18%;
   --card-foreground: 40 20% 95%;
   --card-border: 20 15% 25%;
-  
+
   --popover: 20 15% 18%;
   --popover-foreground: 40 20% 95%;
   --popover-border: 20 15% 25%;
-  
+
   --primary: 9 85% 65%;
   --primary-foreground: 0 0% 100%;
-  
+
   --secondary: 195 40% 30%;
   --secondary-foreground: 195 75% 90%;
-  
+
   --muted: 20 10% 25%;
   --muted-foreground: 40 15% 70%;
-  
+
   --accent: 42 80% 50%;
   --accent-foreground: 20 20% 10%;
-  
+
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
-  
+
   --border: 20 15% 28%;
   --input: 20 15% 28%;
   --ring: 9 85% 65%;
@@ -132,4 +129,10 @@
   .animate-spin-slow {
     animation: spin 10s linear infinite;
   }
+}
+
+/* Clerk placeholder contrast fix */
+.cl-formFieldInput::placeholder {
+  color: hsl(25 15% 60%);
+  opacity: 1;
 }
