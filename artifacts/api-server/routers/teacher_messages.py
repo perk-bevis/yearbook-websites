@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
 from pydantic import BaseModel
 from typing import Optional
 
 from database import get_db, row_to_dict, rows_to_list
+from auth import require_user
 
 router = APIRouter(tags=["teacher-messages"])
 
@@ -30,9 +31,14 @@ def list_teacher_messages():
 
 
 @router.post("/teacher-messages", status_code=201)
-def create_teacher_message(data: TeacherMessageInput):
+def create_teacher_message(data: TeacherMessageInput, clerk_user_id: str = Depends(require_user)):
+    """Only logged-in users with role=teacher may post."""
     with get_db() as conn:
         with conn.cursor() as cur:
+            cur.execute("SELECT role FROM app_users WHERE clerk_user_id = %s", (clerk_user_id,))
+            row = cur.fetchone()
+            if not row or row[0] != "teacher":
+                raise HTTPException(status_code=403, detail="Chỉ giáo viên mới có thể đăng lời nhắn")
             cur.execute(
                 """INSERT INTO teacher_messages (teacher_name, subject, message, photo_url)
                    VALUES (%s, %s, %s, %s) RETURNING *""",

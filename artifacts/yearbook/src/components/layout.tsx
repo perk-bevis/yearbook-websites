@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, GraduationCap, Frame, LogIn, UserCircle, Crown, LogOut, BookOpen, Newspaper } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, GraduationCap, Frame, LogIn, UserCircle, Crown, LogOut, BookOpen, Newspaper, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useUser, useClerk, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
 import { AiChatWidget } from '@/components/ai-chat-widget';
+
+const BASE = import.meta.env.BASE_URL;
 
 const NAV_LINKS = [
   { href: '/', label: 'Trang chủ', icon: BookHeart },
@@ -16,6 +18,36 @@ const NAV_LINKS = [
   { href: '/frames', label: 'Khung ảnh', icon: Frame },
   { href: '/feed', label: 'Bảng tin', icon: Newspaper },
 ];
+
+function MessagesIcon() {
+  const [unread, setUnread] = useState(0);
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!user) return;
+    const fetch_ = () =>
+      fetch(`${BASE}api/messages/unread-count`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => setUnread(d.count || 0))
+        .catch(() => {});
+    fetch_();
+    const t = setInterval(fetch_, 8000);
+    return () => clearInterval(t);
+  }, [user]);
+
+  return (
+    <Link href="/tin-nhan">
+      <button className="relative p-2 rounded-full hover:bg-muted transition-colors" title="Tin nhắn">
+        <MessageCircle className="w-5 h-5 text-muted-foreground" />
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+      </button>
+    </Link>
+  );
+}
 
 function UserMenu() {
   const { user } = useUser();
@@ -50,6 +82,10 @@ function UserMenu() {
               <Link href="/profile" onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
                 <UserCircle className="w-4 h-4 text-muted-foreground" />Hồ sơ cá nhân
+              </Link>
+              <Link href="/tin-nhan" onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
+                <MessageCircle className="w-4 h-4 text-muted-foreground" />Tin nhắn
               </Link>
               <Link href="/subscribe" onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
@@ -121,7 +157,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* Auth area */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Show when="signed-in">
+              <MessagesIcon />
+            </Show>
             <Show when="signed-out">
               <Link href="/sign-in">
                 <button className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">
@@ -164,6 +203,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+              <Show when="signed-in">
+                <Link href="/tin-nhan" onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:bg-muted">
+                  <MessageCircle className="w-4 h-4" />Tin nhắn
+                </Link>
+              </Show>
               <Show when="signed-out">
                 <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-primary bg-primary/10">
@@ -187,8 +232,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      {/* Floating AI chat widget */}
-      <AiChatWidget />
+      {/* Floating AI chat widget — only for signed-in users */}
+      <Show when="signed-in">
+        <AiChatWidget />
+      </Show>
     </div>
   );
 }

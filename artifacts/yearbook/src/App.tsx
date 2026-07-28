@@ -21,6 +21,8 @@ import Feed from '@/pages/feed';
 import Profile from '@/pages/profile';
 import Subscribe from '@/pages/subscribe';
 import Onboarding from '@/pages/onboarding';
+import RoleSelect from '@/pages/role-select';
+import Messages from '@/pages/messages';
 import NotFound from '@/pages/not-found';
 
 // ── Clerk config ─────────────────────────────────────────────────────────────
@@ -89,11 +91,11 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5 * 60 * 1000 } },
 });
 
-// ── UserSync: call /api/auth/sync on sign-in ──────────────────────────────────
+// ── UserSync: call /api/auth/sync on sign-in, redirect to role-select if needed ─
 function UserSync() {
   const { user } = useClerk();
   const synced = useRef(false);
-  const qc = useQueryClient();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!user || synced.current) return;
@@ -102,7 +104,15 @@ function UserSync() {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: user.primaryEmailAddress?.emailAddress, full_name: user.fullName }),
-    }).catch(() => {});
+    })
+      .then(r => r.json())
+      .then(data => {
+        // If role not set yet, redirect to role selection
+        if (data && (data.role === 'unknown' || !data.role)) {
+          setLocation('/chon-vai-tro');
+        }
+      })
+      .catch(() => {});
   }, [user]);
 
   return null;
@@ -112,10 +122,20 @@ function UserSync() {
 function Router() {
   return (
     <Switch>
-      {/* Clerk auth pages (outside Layout) */}
+      {/* Clerk auth pages (outside Layout) — match both exact and sub-paths */}
+      <Route path="/sign-in">
+        <div className="min-h-[100dvh] flex items-center justify-center bg-muted/20 px-4 py-12">
+          <SignIn routing="path" path={`${basePath}/sign-in`} />
+        </div>
+      </Route>
       <Route path="/sign-in/:rest*">
         <div className="min-h-[100dvh] flex items-center justify-center bg-muted/20 px-4 py-12">
           <SignIn routing="path" path={`${basePath}/sign-in`} />
+        </div>
+      </Route>
+      <Route path="/sign-up">
+        <div className="min-h-[100dvh] flex items-center justify-center bg-muted/20 px-4 py-12">
+          <SignUp routing="path" path={`${basePath}/sign-up`} />
         </div>
       </Route>
       <Route path="/sign-up/:rest*">
@@ -140,6 +160,9 @@ function Router() {
             <Route path="/profile" component={Profile} />
             <Route path="/subscribe" component={Subscribe} />
             <Route path="/onboarding" component={Onboarding} />
+            <Route path="/chon-vai-tro" component={RoleSelect} />
+            <Route path="/tin-nhan/:partnerId" component={Messages} />
+            <Route path="/tin-nhan" component={Messages} />
             {/* Admin at a hidden path — not linked in nav */}
             <Route path="/quan-tri-admin" component={Admin} />
             <Route component={NotFound} />

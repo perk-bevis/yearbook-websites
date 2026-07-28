@@ -62,6 +62,25 @@ def get_me(clerk_user_id: str = Depends(require_user)):
     return user
 
 # ── Profile update ──────────────────────────────────────────────────────────
+# ── Role ────────────────────────────────────────────────────────────────────
+class RoleUpdate(BaseModel):
+    role: str  # "teacher" | "student"
+
+@router.put("/auth/me/role")
+def set_role(body: RoleUpdate, clerk_user_id: str = Depends(require_user)):
+    if body.role not in ("teacher", "student"):
+        raise HTTPException(status_code=400, detail="role phải là 'teacher' hoặc 'student'")
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE app_users SET role = %s, updated_at = NOW() WHERE clerk_user_id = %s RETURNING *",
+            (body.role, clerk_user_id)
+        )
+        user = row_to_dict(cur, cur.fetchone())
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     nickname: Optional[str] = None
