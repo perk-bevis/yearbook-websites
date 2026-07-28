@@ -17,12 +17,13 @@ import Events from '@/pages/events';
 import Teachers from '@/pages/teachers';
 import Frames from '@/pages/frames';
 import Admin from '@/pages/admin';
+import Feed from '@/pages/feed';
 import Profile from '@/pages/profile';
 import Subscribe from '@/pages/subscribe';
 import Onboarding from '@/pages/onboarding';
 import NotFound from '@/pages/not-found';
 
-// ── Clerk config ────────────────────────────────────────────────────────────
+// ── Clerk config ─────────────────────────────────────────────────────────────
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
@@ -31,9 +32,7 @@ const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || '/'
-    : path;
+  return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
 }
 
 if (!clerkPubKey) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
@@ -82,96 +81,67 @@ const clerkAppearance = {
     dividerLine: 'bg-border',
     alert: 'border border-destructive/20 bg-destructive/5',
     otpCodeFieldInput: 'border border-input bg-muted/50',
-    formFieldRow: '',
-    main: '',
   },
 };
 
-// ── Query client ─────────────────────────────────────────────────────────────
+// ── Query client ──────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5 * 60 * 1000 } },
 });
 
-// ── Auto-sync user on sign-in ────────────────────────────────────────────────
+// ── UserSync: call /api/auth/sync on sign-in ──────────────────────────────────
 function UserSync() {
-  const { addListener } = useClerk();
+  const { user } = useClerk();
+  const synced = useRef(false);
   const qc = useQueryClient();
-  const prevIdRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const unsub = addListener(({ user }) => {
-      const uid = user?.id ?? null;
-      if (prevIdRef.current !== undefined && prevIdRef.current !== uid) {
-        qc.clear();
-      }
-      prevIdRef.current = uid;
-
-      // Sync user to our DB on first login
-      if (uid && user) {
-        fetch(`${import.meta.env.BASE_URL}api/auth/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.primaryEmailAddress?.emailAddress,
-            full_name: user.fullName || user.firstName,
-          }),
-        }).catch(() => {});
-      }
-    });
-    return unsub;
-  }, [addListener, qc]);
+    if (!user || synced.current) return;
+    synced.current = true;
+    fetch(`${basePath}/api/auth/sync`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.primaryEmailAddress?.emailAddress, full_name: user.fullName }),
+    }).catch(() => {});
+  }, [user]);
 
   return null;
 }
 
-// ── Sign-in / Sign-up pages ──────────────────────────────────────────────────
-function SignInPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-background via-muted/30 to-secondary/10 px-4 py-12">
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        fallbackRedirectUrl={`${basePath}/`}
-      />
-    </div>
-  );
-}
-
-function SignUpPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-background via-muted/30 to-secondary/10 px-4 py-12">
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-        fallbackRedirectUrl={`${basePath}/onboarding`}
-      />
-    </div>
-  );
-}
-
-// ── Router ───────────────────────────────────────────────────────────────────
+// ── Router ────────────────────────────────────────────────────────────────────
 function Router() {
   return (
     <Switch>
-      <Route path="/sign-in/*?" component={SignInPage} />
-      <Route path="/sign-up/*?" component={SignUpPage} />
+      {/* Clerk auth pages (outside Layout) */}
+      <Route path="/sign-in/:rest*">
+        <div className="min-h-[100dvh] flex items-center justify-center bg-muted/20 px-4 py-12">
+          <SignIn routing="path" path={`${basePath}/sign-in`} />
+        </div>
+      </Route>
+      <Route path="/sign-up/:rest*">
+        <div className="min-h-[100dvh] flex items-center justify-center bg-muted/20 px-4 py-12">
+          <SignUp routing="path" path={`${basePath}/sign-up`} />
+        </div>
+      </Route>
+
+      {/* Main app (inside Layout) */}
       <Route>
         <Layout>
           <Switch>
             <Route path="/" component={Home} />
-            <Route path="/students" component={Students} />
             <Route path="/students/:id" component={StudentDetail} />
+            <Route path="/students" component={Students} />
             <Route path="/gallery" component={Gallery} />
             <Route path="/memories" component={Memories} />
             <Route path="/events" component={Events} />
             <Route path="/teachers" component={Teachers} />
             <Route path="/frames" component={Frames} />
+            <Route path="/feed" component={Feed} />
             <Route path="/profile" component={Profile} />
             <Route path="/subscribe" component={Subscribe} />
             <Route path="/onboarding" component={Onboarding} />
-            <Route path="/admin" component={Admin} />
+            {/* Admin at a hidden path — not linked in nav */}
+            <Route path="/quan-tri-admin" component={Admin} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
@@ -180,7 +150,7 @@ function Router() {
   );
 }
 
-// ── App ──────────────────────────────────────────────────────────────────────
+// ── App ───────────────────────────────────────────────────────────────────────
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
   return (

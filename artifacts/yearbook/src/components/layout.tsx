@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, GraduationCap, Frame, ShieldCheck, LogIn, UserCircle, Crown, LogOut, BookOpen } from 'lucide-react';
+import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, GraduationCap, Frame, LogIn, UserCircle, Crown, LogOut, BookOpen, Newspaper } from 'lucide-react';
 import { useState } from 'react';
 import { useUser, useClerk, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
+import { AiChatWidget } from '@/components/ai-chat-widget';
 
 const NAV_LINKS = [
   { href: '/', label: 'Trang chủ', icon: BookHeart },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
   { href: '/events', label: 'Dòng thời gian', icon: Clock },
   { href: '/teachers', label: 'Lời thầy cô', icon: GraduationCap },
   { href: '/frames', label: 'Khung ảnh', icon: Frame },
+  { href: '/feed', label: 'Bảng tin', icon: Newspaper },
 ];
 
 function UserMenu() {
@@ -30,11 +32,10 @@ function UserMenu() {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted transition-colors"
       >
-        {avatar ? (
-          <img src={avatar} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
-        ) : (
-          <AvatarGradient name={displayName} className="w-8 h-8" textClassName="text-sm" />
-        )}
+        {avatar
+          ? <img src={avatar} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
+          : <AvatarGradient name={displayName} className="w-8 h-8" textClassName="text-sm" />
+        }
       </button>
 
       {open && (
@@ -43,42 +44,31 @@ function UserMenu() {
           <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/30">
               <p className="font-semibold text-sm truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.primaryEmailAddress?.emailAddress}
-              </p>
+              <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
             </div>
             <div className="p-1.5 flex flex-col gap-0.5">
-              <Link
-                href="/profile"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors"
-              >
-                <UserCircle className="w-4 h-4 text-muted-foreground" />
-                Hồ sơ cá nhân
+              <Link href="/profile" onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
+                <UserCircle className="w-4 h-4 text-muted-foreground" />Hồ sơ cá nhân
               </Link>
-              <Link
-                href="/subscribe"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors"
-              >
-                <Crown className="w-4 h-4 text-amber-500" />
-                Nâng cấp Premium
+              <Link href="/subscribe" onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
+                <Crown className="w-4 h-4 text-amber-500" />Nâng cấp Premium
               </Link>
-              <Link
-                href="/onboarding"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors"
-              >
-                <BookOpen className="w-4 h-4 text-muted-foreground" />
-                Tạo kỷ yếu mới
+              <Link href="/feed" onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
+                <Newspaper className="w-4 h-4 text-muted-foreground" />Bảng tin lớp
+              </Link>
+              <Link href="/onboarding" onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-muted transition-colors">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />Tạo kỷ yếu mới
               </Link>
               <div className="border-t border-border my-1" />
               <button
                 onClick={() => { setOpen(false); signOut({ redirectUrl: basePath || '/' }); }}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
               >
-                <LogOut className="w-4 h-4" />
-                Đăng xuất
+                <LogOut className="w-4 h-4" />Đăng xuất
               </button>
             </div>
           </div>
@@ -119,8 +109,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     'px-3 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -128,106 +118,77 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-            <div className="w-px h-6 bg-border mx-2" />
-            {/* Admin icon */}
-            <Link
-              href="/admin"
-              className={cn(
-                'p-2 rounded-full transition-colors',
-                location.startsWith('/admin') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted',
-              )}
-              title="Quản trị"
-            >
-              <ShieldCheck className="w-5 h-5" />
-            </Link>
-
-            {/* Auth */}
-            <Show when="signed-out">
-              <Link
-                href="/sign-in"
-                className="ml-1 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1.5"
-              >
-                <LogIn className="w-4 h-4" />
-                Đăng nhập
-              </Link>
-            </Show>
-            <Show when="signed-in">
-              <UserMenu />
-            </Show>
           </nav>
 
-          {/* Mobile: auth + hamburger */}
-          <div className="md:hidden flex items-center gap-2">
+          {/* Auth area */}
+          <div className="flex items-center gap-2">
             <Show when="signed-out">
-              <Link
-                href="/sign-in"
-                className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
-              >
-                Đăng nhập
+              <Link href="/sign-in">
+                <button className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">
+                  <LogIn className="w-3.5 h-3.5" />Đăng nhập
+                </button>
               </Link>
             </Show>
             <Show when="signed-in">
               <UserMenu />
             </Show>
+
+            {/* Mobile menu toggle */}
             <button
-              className="p-2 text-muted-foreground hover:bg-muted rounded-full"
+              className="md:hidden p-2 rounded-full hover:bg-muted transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Nav */}
+        {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t bg-background absolute top-full left-0 w-full p-4 flex flex-col gap-2 shadow-lg animate-in slide-in-from-top-2">
-            {NAV_LINKS.map((link) => {
-              const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    'px-4 py-3 rounded-xl text-base font-medium flex items-center gap-3 transition-colors',
-                    isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted',
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  {link.label}
+          <div className="md:hidden border-t bg-background/95 backdrop-blur-md">
+            <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
+              {NAV_LINKS.map((link) => {
+                const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors',
+                      isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />{link.label}
+                  </Link>
+                );
+              })}
+              <Show when="signed-out">
+                <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-primary bg-primary/10">
+                  <LogIn className="w-4 h-4" />Đăng nhập
                 </Link>
-              );
-            })}
-            <Link
-              href="/admin"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                'px-4 py-3 rounded-xl text-base font-medium flex items-center gap-3 transition-colors',
-                location.startsWith('/admin') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted',
-              )}
-            >
-              <ShieldCheck className="w-5 h-5" />
-              Quản trị
-            </Link>
+              </Show>
+            </nav>
           </div>
         )}
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col">{children}</main>
+      {/* Page content */}
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t bg-background mt-auto py-8">
-        <div className="container mx-auto px-4 text-center">
-          <div className="font-display text-3xl mb-2 text-primary">Kỷ Yếu Lớp 9A</div>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            THCS Vũ Lăng • Khóa 2016 - 2019
-            <br />
-            Lưu giữ những năm tháng thanh xuân tươi đẹp nhất.
-          </p>
+      <footer className="border-t bg-muted/20 mt-auto">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <p className="font-display text-2xl font-bold text-primary mb-1">Kỷ Yếu Lớp 9A</p>
+          <p className="text-muted-foreground text-sm">THCS Vũ Lăng • Khóa 2016 - 2019</p>
+          <p className="text-muted-foreground text-xs mt-2">Lưu giữ những năm tháng thanh xuân tươi đẹp nhất.</p>
         </div>
       </footer>
+
+      {/* Floating AI chat widget */}
+      <AiChatWidget />
     </div>
   );
 }
