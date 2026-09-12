@@ -1,0 +1,1 @@
+- [Database schema compatibility](schema-compatibility.md) — verify app_users columns before adding social features because deployed schemas can lag the current API code.

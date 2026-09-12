@@ -37,8 +37,9 @@ function MessagesIcon() {
 
   return (
     <Link href="/tin-nhan">
-      <button className="relative p-2 rounded-full hover:bg-muted transition-colors" title="Tin nhắn">
+      <button className="relative flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-muted transition-colors text-sm font-medium text-muted-foreground" title="Tin nhắn">
         <MessageCircle className="w-5 h-5 text-muted-foreground" />
+         <span className="hidden lg:inline">Tin nhắn</span>
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unread > 99 ? '99+' : unread}
@@ -118,6 +119,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!user) return;
+    const touch = () => {
+      fetch(`${BASE}api/auth/presence`, { method: 'POST', credentials: 'include' }).catch(() => {});
+    };
+    touch();
+    const timer = setInterval(touch, 30000);
+    return () => clearInterval(timer);
+  }, [user?.id]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col relative overflow-hidden bg-background">
@@ -158,9 +170,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Auth area */}
           <div className="flex items-center gap-1">
-            <Show when="signed-in">
-              <MessagesIcon />
-            </Show>
+            <MessagesIcon />
             <Show when="signed-out">
               <Link href="/sign-in">
                 <button className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">

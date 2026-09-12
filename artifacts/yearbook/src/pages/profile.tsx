@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   UserCircle, PencilLine, Check, Crown, BookOpen,
   Camera, Phone, Facebook, Instagram, MessageCircle, Quote,
-  Heart, CalendarDays, Upload, Trash2, Plus, Send, LogIn, X,
+  Heart, CalendarDays, Upload, Trash2, Plus, Send, LogIn, X, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,14 @@ interface GuestbookEntry {
   author_clerk_id: string;
   message: string;
   created_at: string;
+}
+
+interface Friend {
+  clerk_user_id: string;
+  full_name: string;
+  nickname?: string;
+  photo_url?: string;
+  online?: boolean;
 }
 
 /* ─── Avatar upload section ─────────────────────────────────────────────── */
@@ -215,6 +223,7 @@ export default function Profile() {
   const [gbName, setGbName] = useState('');
   const [gbSending, setGbSending] = useState(false);
   const [memPhotos, setMemPhotos] = useState<string[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const memFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -226,6 +235,9 @@ export default function Profile() {
     fetch(`${BASE}api/users/${user.id}/guestbook`)
       .then(r => r.ok ? r.json() : [])
       .then(setGuestbook).catch(() => {});
+    fetch(`${BASE}api/friends/list`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => Array.isArray(data) && setFriends(data)).catch(() => {});
   }, [isLoaded, user]);
 
   const addMemoryPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,48 +434,42 @@ export default function Profile() {
             }
           </section>
 
-          {/* ── Sổ lưu bút ───────────────────────────────────────────────── */}
+          {/* ── Bạn bè ────────────────────────────────────────────────────── */}
           <section className="bg-card border border-border rounded-3xl p-6">
             <h2 className="font-bold mb-5 flex items-center gap-2 text-base">
-              <BookOpen className="w-4.5 h-4.5 text-primary" />Sổ lưu bút
-              <Badge variant="outline" className="ml-auto text-xs">{guestbook.length} lời nhắn</Badge>
+              <Users className="w-4.5 h-4.5 text-primary" />Bạn bè đã thêm
+              <Badge variant="outline" className="ml-auto text-xs">{friends.length} bạn</Badge>
             </h2>
-
-            {/* Write form */}
-            <div className="bg-muted/20 rounded-2xl p-4 mb-5 space-y-3">
-              <p className="text-sm font-semibold">Để lại lời nhắn:</p>
-              <Input value={gbName} onChange={e => setGbName(e.target.value)} placeholder="Tên của bạn (bỏ trống = ẩn danh)" className="bg-background" />
-              <Textarea value={gbMsg} onChange={e => setGbMsg(e.target.value)} placeholder="Viết lời nhắn, ký tên..." rows={3} className="bg-background resize-none" />
-              <Button onClick={sendGuestbook} disabled={gbSending || !gbMsg.trim()} size="sm" className="gap-1.5">
-                <Send className="w-3.5 h-3.5" />{gbSending ? 'Đang gửi...' : 'Gửi'}
-              </Button>
-            </div>
-
-            {guestbook.length === 0
-              ? <p className="text-center text-muted-foreground text-sm py-6">Chưa có lời nhắn nào.</p>
-              : (
-                <div className="space-y-3">
-                  {guestbook.map(entry => (
-                    <div key={entry.id} className="group flex gap-3 p-3.5 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-colors">
-                      <AvatarGradient name={entry.author_name} className="w-9 h-9 shrink-0" textClassName="text-xs" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 mb-0.5">
-                          <span className="font-semibold text-sm">{entry.author_name}</span>
-                          <span className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                        <p className="text-sm leading-relaxed">{entry.message}</p>
+            {friends.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                Bạn chưa thêm người bạn nào.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {friends.map(friend => {
+                  const name = friend.nickname || friend.full_name || 'Người dùng';
+                  return (
+                    <Link
+                      key={friend.clerk_user_id}
+                      href={`/profile/${friend.clerk_user_id}`}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-muted/20 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="relative shrink-0">
+                        {friend.photo_url
+                          ? <img src={friend.photo_url} alt={name} className="w-10 h-10 rounded-full object-cover" />
+                          : <AvatarGradient name={name} className="w-10 h-10" textClassName="text-sm" />}
+                        <span className={`absolute -right-0.5 -bottom-0.5 w-3 h-3 rounded-full border-2 border-card ${friend.online ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
                       </div>
-                      <button
-                        onClick={() => deleteGbEntry(entry.id)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0 self-start mt-0.5"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )
-            }
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{name}</p>
+                        <p className="text-xs text-muted-foreground">{friend.online ? 'Đang hoạt động' : 'Ngoại tuyến'}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </motion.div>
       </Show>

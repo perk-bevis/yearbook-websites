@@ -246,11 +246,13 @@ function PostCard({ post, user, profile, onDeleted }: { post: Post; user: any; p
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <UserAvatar photo={post.author_photo} name={post.author_name} />
-          <div>
-            <p className="font-semibold text-sm">{post.author_name}</p>
-            <RelTime iso={post.created_at} />
-          </div>
+          <Link href={`/profile/${post.clerk_user_id}`} className="flex items-center gap-3 min-w-0">
+            <UserAvatar photo={post.author_photo} name={post.author_name} />
+            <div className="min-w-0">
+              <p className="font-semibold text-sm truncate hover:text-primary transition-colors">{post.author_name}</p>
+              <RelTime iso={post.created_at} />
+            </div>
+          </Link>
         </div>
         {user?.id === post.clerk_user_id && (
           <button onClick={deletePost} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1.5 rounded-full hover:bg-destructive/10">

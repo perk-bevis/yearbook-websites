@@ -166,12 +166,24 @@ def get_public_profile(clerk_user_id: str):
         cur.execute("""
             SELECT clerk_user_id, full_name, nickname, birth_date,
                    favorite_quote, personal_letter, photo_url, memory_photos,
-                   school_name, class_name, plan, student_id
+                   school_name, class_name, plan, student_id, role, last_seen_at
             FROM app_users WHERE clerk_user_id = %s
         """, (clerk_user_id,))
         profile = row_to_dict(cur, cur.fetchone())
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
+    if profile:
+        from datetime import datetime, timezone
+        seen = profile.get("last_seen_at")
+        if isinstance(seen, str):
+            try:
+                seen = datetime.fromisoformat(seen.replace("Z", "+00:00"))
+            except ValueError:
+                seen = None
+        profile["online"] = bool(
+            seen
+            and (datetime.now(timezone.utc) - seen).total_seconds() < 120
+        )
     return profile
 
 # ── Guestbook ───────────────────────────────────────────────────────────────

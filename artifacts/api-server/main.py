@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import health, students, gallery, memories, events, teacher_messages, frames, stats
-from routers import users, yearbooks, whop_routes, feed, ai_chat, messages
+from routers import users, yearbooks, whop_routes, feed, ai_chat, messages, social
 
 app = FastAPI(
     title="Kỷ Yếu Platform API",
@@ -37,3 +37,4 @@ app.include_router(whop_routes.router, prefix=PREFIX)
 app.include_router(feed.router, prefix=PREFIX)
 app.include_router(ai_chat.router, prefix=PREFIX)
 app.include_router(messages.router, prefix=PREFIX)
+app.include_router(social.router, prefix=PREFIX)

@@ -19,6 +19,7 @@ import Frames from '@/pages/frames';
 import Admin from '@/pages/admin';
 import Feed from '@/pages/feed';
 import Profile from '@/pages/profile';
+import PublicProfile from '@/pages/public-profile';
 import Subscribe from '@/pages/subscribe';
 import Onboarding from '@/pages/onboarding';
 import RoleSelect from '@/pages/role-select';
@@ -158,9 +159,11 @@ function Router() {
             <Route path="/frames" component={Frames} />
             <Route path="/feed" component={Feed} />
             <Route path="/profile" component={Profile} />
+            <Route path="/profile/:userId" component={PublicProfile} />
             <Route path="/subscribe" component={Subscribe} />
             <Route path="/onboarding" component={Onboarding} />
             <Route path="/chon-vai-tro" component={RoleSelect} />
+            <Route path="/tin-nhan/nhom/:groupId" component={Messages} />
             <Route path="/tin-nhan/:partnerId" component={Messages} />
             <Route path="/tin-nhan" component={Messages} />
             {/* Admin at a hidden path — not linked in nav */}

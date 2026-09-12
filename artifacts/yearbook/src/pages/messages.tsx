@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser, Show } from '@clerk/react';
 import { Link, useParams, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X } from 'lucide-react';
+import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
@@ -18,6 +18,7 @@ interface Conversation {
   nickname: string;
   photo_url: string;
   role: string;
+  online?: boolean;
 }
 
 interface Message {
@@ -38,6 +39,23 @@ interface UserItem {
   nickname: string;
   photo_url: string;
   role: string;
+  online?: boolean;
+}
+
+interface Group {
+  id: number;
+  name: string;
+  member_count: number;
+  last_message?: string;
+  last_at?: string;
+}
+
+interface Friend {
+  clerk_user_id: string;
+  full_name: string;
+  nickname?: string;
+  photo_url?: string;
+  online?: boolean;
 }
 
 function timeAgo(iso: string) {
@@ -56,7 +74,7 @@ function displayName(u: { full_name?: string; nickname?: string }) {
 
 export default function Messages() {
   const { user } = useUser();
-  const params = useParams<{ partnerId?: string }>();
+  const params = useParams<{ partnerId?: string; groupId?: string }>();
   const [, navigate] = useLocation();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -67,12 +85,20 @@ export default function Messages() {
   const [showPicker, setShowPicker] = useState(false);
   const [allUsers, setAllUsers] = useState<UserItem[]>([]);
   const [userSearch, setUserSearch] = useState('');
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [groupMessages, setGroupMessages] = useState<Message[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const partnerId = params?.partnerId;
+  const groupId = params?.groupId ? Number(params.groupId) : undefined;
 
   const activeConv = conversations.find(c => c.partner_id === partnerId);
+  const activeGroup = groups.find(g => g.id === groupId);
 
   // Load conversations
   const fetchConversations = () => {
@@ -80,6 +106,18 @@ export default function Messages() {
     fetch(`${BASE}api/messages/conversations`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => Array.isArray(data) && setConversations(data))
+      .catch(() => {});
+    fetch(`${BASE}api/groups`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => Array.isArray(data) && setGroups(data))
+      .catch(() => {});
+  };
+
+  const fetchGroupThread = () => {
+    if (!user || !groupId) return;
+    fetch(`${BASE}api/groups/${groupId}/messages`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => Array.isArray(data) && setGroupMessages(data))
       .catch(() => {});
   };
 
@@ -104,30 +142,42 @@ export default function Messages() {
     pollRef.current = setInterval(() => {
       fetchConversations();
       if (partnerId) fetchThread();
+      if (groupId) fetchGroupThread();
     }, 4000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [user, partnerId]);
+  }, [user, partnerId, groupId]);
 
   useEffect(() => {
     if (partnerId) {
       setMessages([]);
       fetchThread();
     }
-  }, [partnerId, user]);
+    if (groupId) {
+      setGroupMessages([]);
+      fetchGroupThread();
+    }
+  }, [partnerId, groupId, user]);
 
   const sendMessage = async () => {
-    if (!text.trim() || !partnerId || sending) return;
+    if (!text.trim() || (!partnerId && !groupId) || sending) return;
     setSending(true);
     try {
-      const res = await fetch(`${BASE}api/messages/send`, {
+      const url = groupId ? `${BASE}api/groups/${groupId}/messages` : `${BASE}api/messages/send`;
+      const body = groupId
+        ? { content: text.trim() }
+        : { receiver_id: partnerId, content: text.trim() };
+      const res = await fetch(url, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receiver_id: partnerId, content: text.trim() }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setText('');
-        fetchThread();
-        fetchConversations();
+        if (groupId) fetchGroupThread();
+        else {
+          fetchThread();
+          fetchConversations();
+        }
       }
     } finally {
       setSending(false);
@@ -140,6 +190,31 @@ export default function Messages() {
       if (res.ok) setAllUsers(await res.json());
     }
     setShowPicker(true);
+  };
+
+  const openGroupModal = async () => {
+    if (!friends.length) {
+      const res = await fetch(`${BASE}api/friends/list`, { credentials: 'include' });
+      if (res.ok) setFriends(await res.json());
+    }
+    setGroupName('');
+    setSelectedFriendIds([]);
+    setShowGroupModal(true);
+  };
+
+  const createGroup = async () => {
+    if (!groupName.trim() || selectedFriendIds.length === 0) return;
+    const res = await fetch(`${BASE}api/groups`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: groupName.trim(), member_ids: selectedFriendIds }),
+    });
+    if (res.ok) {
+      const group = await res.json();
+      setShowGroupModal(false);
+      fetchConversations();
+      navigate(`/tin-nhan/nhom/${group.id}`);
+    }
   };
 
   const filteredConvs = conversations.filter(c =>
@@ -163,17 +238,18 @@ export default function Messages() {
         <div className="flex h-[calc(100dvh-5rem)] md:h-[75vh] bg-card md:rounded-3xl border overflow-hidden shadow-sm">
 
           {/* Left sidebar — conversation list */}
-          <div className={`w-full md:w-80 flex flex-col border-r shrink-0 ${partnerId ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`w-full md:w-80 flex flex-col border-r shrink-0 ${partnerId || groupId ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-bold text-lg">Tin nhắn</h2>
-                <button
-                  onClick={openNewChat}
-                  className="p-2 rounded-full hover:bg-muted transition-colors text-primary"
-                  title="Nhắn tin mới"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={openNewChat} className="p-2 rounded-full hover:bg-muted transition-colors text-primary" title="Nhắn tin mới">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                  <button onClick={openGroupModal} className="p-2 rounded-full hover:bg-muted transition-colors text-primary" title="Tạo nhóm từ bạn bè">
+                    <Users className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -187,6 +263,21 @@ export default function Messages() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
+              {groups.length > 0 && (
+                <div className="border-b pb-2">
+                  <p className="px-4 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Nhóm</p>
+                  {groups.map(group => (
+                    <button key={group.id} onClick={() => navigate(`/tin-nhan/nhom/${group.id}`)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${groupId === group.id ? 'bg-primary/5' : ''}`}>
+                      <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Users className="w-5 h-5" /></div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{group.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{group.member_count} thành viên{group.last_message ? ` · ${group.last_message}` : ''}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
               {filteredConvs.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm">
                   <MessageCircle className="w-8 h-8 mb-2 opacity-40" />
@@ -205,10 +296,13 @@ export default function Messages() {
                   }`}
                 >
                   <div className="relative shrink-0">
+                    <div className="relative">
                     {conv.photo_url
                       ? <img src={conv.photo_url} alt="" className="w-11 h-11 rounded-full object-cover" />
                       : <AvatarGradient name={displayName(conv)} className="w-11 h-11" textClassName="text-base" />
                     }
+                    <span className={`absolute right-0 bottom-0 w-3 h-3 rounded-full border-2 border-card ${conv.online ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
+                    </div>
                     {conv.unread_count > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                         {conv.unread_count}
@@ -232,8 +326,8 @@ export default function Messages() {
           </div>
 
           {/* Right — message thread */}
-          <div className={`flex-1 flex flex-col ${!partnerId ? 'hidden md:flex' : 'flex'}`}>
-            {!partnerId ? (
+          <div className={`flex-1 flex flex-col ${!partnerId && !groupId ? 'hidden md:flex' : 'flex'}`}>
+            {!partnerId && !groupId ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
                 <MessageCircle className="w-12 h-12 opacity-30" />
                 <p className="text-sm">Chọn một cuộc trò chuyện để bắt đầu</p>
@@ -251,15 +345,18 @@ export default function Messages() {
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  {activeConv?.photo_url
+                  {groupId ? (
+                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center"><Users className="w-4 h-4" /></div>
+                  ) : activeConv?.photo_url
                     ? <img src={activeConv.photo_url} alt="" className="w-9 h-9 rounded-full object-cover" />
                     : <AvatarGradient name={displayName(activeConv || { full_name: partnerId })} className="w-9 h-9" textClassName="text-sm" />
                   }
                   <div>
-                    <p className="font-semibold text-sm">{activeConv ? displayName(activeConv) : '...'}</p>
-                    {activeConv?.role && (
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {activeConv.role === 'teacher' ? '🎓 Giáo viên' : '📚 Học sinh'}
+                    <p className="font-semibold text-sm">{groupId ? (activeGroup?.name || 'Nhóm') : (activeConv ? displayName(activeConv) : '...')}</p>
+                    {groupId ? <p className="text-xs text-muted-foreground">{activeGroup?.member_count || 0} thành viên</p> : (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${activeConv?.online ? 'bg-emerald-500' : 'bg-muted-foreground/50'}`} />
+                        {activeConv?.online ? 'Đang hoạt động' : 'Không hoạt động'}
                       </p>
                     )}
                   </div>
@@ -267,7 +364,7 @@ export default function Messages() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                  {messages.map(msg => {
+                  {(groupId ? groupMessages : messages).map(msg => {
                     const isMine = msg.sender_id === user?.id;
                     return (
                       <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -314,6 +411,39 @@ export default function Messages() {
             )}
           </div>
         </div>
+
+        {/* New group modal */}
+        <AnimatePresence>
+          {showGroupModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowGroupModal(false)}>
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                onClick={e => e.stopPropagation()} className="bg-card rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <h3 className="font-bold">Tạo nhóm mới</h3>
+                  <button onClick={() => setShowGroupModal(false)} className="p-1.5 rounded-full hover:bg-muted"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-4 space-y-3">
+                  <Input value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="Tên nhóm..." />
+                  <p className="text-xs font-semibold text-muted-foreground">Chọn bạn bè để thêm vào nhóm</p>
+                  <div className="max-h-56 overflow-y-auto space-y-1">
+                    {friends.length === 0 ? <p className="text-sm text-muted-foreground py-5 text-center">Bạn chưa có bạn bè để thêm.</p> : friends.map(friend => {
+                      const selected = selectedFriendIds.includes(friend.clerk_user_id);
+                      const name = displayName(friend);
+                      return <button key={friend.clerk_user_id} onClick={() => setSelectedFriendIds(ids => selected ? ids.filter(id => id !== friend.clerk_user_id) : [...ids, friend.clerk_user_id])}
+                        className={`w-full flex items-center gap-3 p-2 rounded-xl text-left ${selected ? 'bg-primary/10' : 'hover:bg-muted/50'}`}>
+                        {friend.photo_url ? <img src={friend.photo_url} alt="" className="w-9 h-9 rounded-full object-cover" /> : <AvatarGradient name={name} className="w-9 h-9" textClassName="text-sm" />}
+                        <span className="flex-1 text-sm font-medium">{name}</span>
+                        {selected && <Check className="w-4 h-4 text-primary" />}
+                      </button>;
+                    })}
+                  </div>
+                  <Button onClick={createGroup} disabled={!groupName.trim() || selectedFriendIds.length === 0} className="w-full gap-2"><Users className="w-4 h-4" />Tạo nhóm</Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* New chat picker modal */}
         <AnimatePresence>

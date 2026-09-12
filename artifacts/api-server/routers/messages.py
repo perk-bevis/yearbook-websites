@@ -63,7 +63,9 @@ def list_conversations(user_id: str = Depends(require_user)):
                 au.full_name,
                 au.nickname,
                 au.photo_url,
-                au.role
+                   au.role,
+                   au.last_seen_at,
+                   (au.last_seen_at IS NOT NULL AND au.last_seen_at > NOW() - INTERVAL '2 minutes') AS online
             FROM last_msgs lm
             LEFT JOIN app_users au ON au.clerk_user_id = lm.partner_id
             ORDER BY lm.last_at DESC
@@ -110,7 +112,8 @@ def list_users(user_id: str = Depends(require_user)):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT clerk_user_id, full_name, nickname, photo_url, role
+            SELECT clerk_user_id, full_name, nickname, photo_url, role, last_seen_at,
+                   (last_seen_at IS NOT NULL AND last_seen_at > NOW() - INTERVAL '2 minutes') AS online
             FROM app_users
             WHERE clerk_user_id != %s
             ORDER BY full_name ASC
