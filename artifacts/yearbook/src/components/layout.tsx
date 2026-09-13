@@ -55,6 +55,7 @@ function UserMenu() {
   const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const signInUrl = `${window.location.origin}${basePath}/sign-in`;
 
   const displayName = user?.firstName || user?.fullName || 'Tài khoản';
   const avatar = user?.imageUrl;
@@ -102,7 +103,10 @@ function UserMenu() {
               </Link>
               <div className="border-t border-border my-1" />
               <button
-                onClick={() => { setOpen(false); signOut({ redirectUrl: basePath || '/' }); }}
+                onClick={() => {
+                  setOpen(false);
+                  signOut({ redirectUrl: signInUrl });
+                }}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
               >
                 <LogOut className="w-4 h-4" />Đăng xuất
@@ -120,6 +124,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const { user } = useUser();
+  const isMessagesPage = location.startsWith('/tin-nhan');
 
   useEffect(() => {
     if (!user) return;
@@ -134,7 +139,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex flex-col relative overflow-hidden bg-background">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+      <header className={cn(
+        'sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md',
+        isMessagesPage && 'hidden md:block',
+      )}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-display text-xl font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -234,7 +242,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/20 mt-auto">
+      <footer className={cn('border-t bg-muted/20 mt-auto', isMessagesPage && 'hidden md:block')}>
         <div className="container mx-auto px-4 py-8 text-center">
           <p className="font-display text-2xl font-bold text-primary mb-1">Kỷ Yếu Lớp 9A</p>
           <p className="text-muted-foreground text-sm">THCS Vũ Lăng • Khóa 2016 - 2019</p>
@@ -244,7 +252,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Floating AI chat widget — only for signed-in users */}
       <Show when="signed-in">
-        <AiChatWidget />
+        {!isMessagesPage && <AiChatWidget />}
       </Show>
     </div>
   );

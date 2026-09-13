@@ -109,15 +109,15 @@ export default function Gallery() {
         </motion.p>
       </div>
 
-      {role === "class_leader" || role === "teacher" ? (
+      {role === "teacher" ? (
         <div className="max-w-3xl mx-auto mb-10 rounded-3xl border border-primary/20 bg-primary/5 p-5">
           <div className="flex items-start gap-3">
             <div className="rounded-2xl bg-primary/10 p-3 text-primary">
               <ImagePlus className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold">Thêm ảnh kỷ niệm của lớp</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Ảnh sẽ được lưu vào Album Ảnh để cả lớp cùng xem.</p>
+               <h2 className="font-semibold">Giáo viên thêm ảnh kỷ niệm của lớp</h2>
+               <p className="mt-1 text-sm text-muted-foreground">Chỉ tài khoản giáo viên phụ trách mới có quyền thêm hoặc quản lý ảnh.</p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={caption}

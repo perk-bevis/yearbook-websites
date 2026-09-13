@@ -30,14 +30,16 @@ def _valid_admin_token(token: Optional[str]) -> bool:
     return password == os.environ.get("ADMIN_PASSWORD", "admin@kyYeu2024")
 
 
-def _is_class_leader(user_id: Optional[str]) -> bool:
+def _can_manage_gallery(user_id: Optional[str]) -> bool:
     if not user_id:
         return False
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("SELECT role FROM app_users WHERE clerk_user_id = %s", (user_id,))
         row = cur.fetchone()
-    return bool(row and row[0] in ("class_leader", "teacher"))
+    # Album ownership belongs to the teacher account. Students must never
+    # receive upload/delete access merely by choosing a class role.
+    return bool(row and row[0] == "teacher")
 
 
 @router.get("/gallery")
@@ -56,8 +58,8 @@ def list_photos(category: Optional[str] = None):
 
 @router.post("/storage/uploads/request-url")
 def request_storage_upload_url(clerk_user_id: str = Depends(require_user)):
-    if not _is_class_leader(clerk_user_id):
-        raise HTTPException(status_code=403, detail="Chỉ lớp trưởng mới được thêm ảnh vào album")
+    if not _can_manage_gallery(clerk_user_id):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên phụ trách lớp mới được thêm ảnh vào album")
     upload_url, object_path = create_upload()
     return {"uploadURL": upload_url, "objectPath": object_path}
 
@@ -69,8 +71,8 @@ def create_photo(
 ):
     if not clerk_user_id and not _valid_admin_token(data.admin_token):
         raise HTTPException(status_code=401, detail="Bạn cần đăng nhập")
-    if clerk_user_id and not _is_class_leader(clerk_user_id):
-        raise HTTPException(status_code=403, detail="Chỉ lớp trưởng mới được thêm ảnh vào album")
+    if clerk_user_id and not _can_manage_gallery(clerk_user_id):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên phụ trách lớp mới được thêm ảnh vào album")
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -88,8 +90,8 @@ def delete_photo(
 ):
     if not clerk_user_id and not _valid_admin_token(admin_token):
         raise HTTPException(status_code=401, detail="Bạn cần đăng nhập")
-    if clerk_user_id and not _is_class_leader(clerk_user_id):
-        raise HTTPException(status_code=403, detail="Chỉ lớp trưởng mới được quản lý album")
+    if clerk_user_id and not _can_manage_gallery(clerk_user_id):
+        raise HTTPException(status_code=403, detail="Chỉ giáo viên phụ trách lớp mới được quản lý album")
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM photos WHERE id = %s RETURNING id", (id,))

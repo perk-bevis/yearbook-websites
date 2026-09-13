@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser, Show } from '@clerk/react';
 import { Link, useParams, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, UserPlus } from 'lucide-react';
+import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, Edit3, Bell, Menu, Facebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
@@ -223,6 +223,7 @@ export default function Messages() {
   const filteredUsers = allUsers.filter(u =>
     displayName(u).toLowerCase().includes(userSearch.toLowerCase())
   );
+  const storyUsers = conversations.filter(conv => conv.photo_url || conv.online).slice(0, 6);
 
   return (
     <div className="container mx-auto px-0 md:px-4 py-0 md:py-8 max-w-5xl">
@@ -235,11 +236,57 @@ export default function Messages() {
       </Show>
 
       <Show when="signed-in">
-        <div className="flex h-[calc(100dvh-5rem)] md:h-[75vh] bg-card md:rounded-3xl border overflow-hidden shadow-sm">
+        <div className="min-h-[100dvh] md:min-h-0 flex flex-col bg-card md:h-[75vh] md:rounded-3xl border overflow-hidden shadow-sm">
+          {/* Mobile Messenger-style inbox header */}
+          {!partnerId && !groupId && (
+            <div className="md:hidden bg-background">
+              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <h1 className="text-[29px] leading-none font-bold tracking-tight text-[#087ef5]">messenger</h1>
+                <div className="flex items-center gap-3">
+                  <button onClick={openNewChat} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center" title="Tin nhắn mới">
+                    <Edit3 className="w-[19px] h-[19px]" />
+                  </button>
+                  <Facebook className="w-7 h-7 fill-current" aria-label="Messenger" />
+                </div>
+              </div>
+              <div className="px-5 pb-3">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[21px] h-[21px] text-muted-foreground" />
+                  <Input
+                    value={searchQ}
+                    onChange={e => setSearchQ(e.target.value)}
+                    placeholder="Hỏi Meta AI hoặc tìm kiếm"
+                    className="h-12 pl-11 rounded-full bg-muted border-0 text-[15px]"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4 overflow-x-auto px-5 pb-4 scrollbar-none">
+                <button onClick={openNewChat} className="w-[62px] shrink-0 text-center">
+                  <div className="relative mx-auto w-[58px] h-[58px] rounded-full bg-muted flex items-center justify-center">
+                    <div className="w-full h-full rounded-full border-2 border-dashed border-muted-foreground/40 flex items-center justify-center">
+                      <Plus className="w-6 h-6 text-foreground" />
+                    </div>
+                  </div>
+                  <span className="block mt-1.5 text-[12px] truncate">Tạo tin</span>
+                </button>
+                {storyUsers.map(conv => (
+                  <button key={conv.partner_id} onClick={() => navigate(`/tin-nhan/${conv.partner_id}`)} className="w-[62px] shrink-0 text-center">
+                    <div className="relative mx-auto w-[58px] h-[58px]">
+                      {conv.photo_url
+                        ? <img src={conv.photo_url} alt="" className="w-full h-full rounded-full object-cover ring-2 ring-background" />
+                        : <AvatarGradient name={displayName(conv)} className="w-full h-full" textClassName="text-lg" />}
+                      <span className={`absolute right-0 bottom-0 w-3.5 h-3.5 rounded-full border-2 border-background ${conv.online ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+                    </div>
+                    <span className="block mt-1.5 text-[12px] truncate">{displayName(conv)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Left sidebar — conversation list */}
           <div className={`w-full md:w-80 flex flex-col border-r shrink-0 ${partnerId || groupId ? 'hidden md:flex' : 'flex'}`}>
-            <div className="p-4 border-b">
+            <div className="hidden md:block p-4 border-b">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-bold text-lg">Tin nhắn</h2>
                 <div className="flex items-center gap-1">
@@ -411,6 +458,28 @@ export default function Messages() {
             )}
           </div>
         </div>
+
+        {/* Bottom navigation mirrors Messenger on small screens. */}
+        {!partnerId && !groupId && (
+          <nav className="md:hidden sticky bottom-0 z-20 h-[68px] border-t bg-background flex items-center justify-around px-2">
+            <button onClick={() => navigate('/tin-nhan')} className="flex flex-col items-center gap-1 text-[#087ef5] text-[11px] font-medium">
+              <MessageCircle className="w-6 h-6 fill-current" />
+              Đoạn chat
+            </button>
+            <button onClick={openNewChat} className="flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
+              <Users className="w-6 h-6" />
+              Mọi người
+            </button>
+            <button onClick={() => navigate('/tin-nhan')} className="relative flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
+              <Bell className="w-6 h-6" />
+              Thông báo
+            </button>
+            <button onClick={openGroupModal} className="flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
+              <Menu className="w-6 h-6" />
+              Menu
+            </button>
+          </nav>
+        )}
 
         {/* New group modal */}
         <AnimatePresence>

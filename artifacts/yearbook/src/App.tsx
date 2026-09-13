@@ -95,12 +95,18 @@ const queryClient = new QueryClient({
 // ── UserSync: call /api/auth/sync on sign-in, redirect to role-select if needed ─
 function UserSync() {
   const { user } = useClerk();
-  const synced = useRef(false);
+  const syncedUserId = useRef<string | null>(null);
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!user || synced.current) return;
-    synced.current = true;
+    if (!user) {
+      syncedUserId.current = null;
+      queryClient.clear();
+      return;
+    }
+    if (syncedUserId.current === user.id) return;
+    syncedUserId.current = user.id;
     fetch(`${basePath}/api/auth/sync`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -114,7 +120,7 @@ function UserSync() {
         }
       })
       .catch(() => {});
-  }, [user]);
+  }, [user, queryClient, setLocation]);
 
   return null;
 }
