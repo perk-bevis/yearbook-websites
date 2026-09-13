@@ -521,9 +521,14 @@ export default function Feed() {
                 user={user}
                 profile={profile}
                 onDeleted={() => setPosts(prev => prev.filter(p => p.id !== post.id))}
-                onUpdated={(updated) => setPosts(prev => prev
-                  .map(p => p.id === updated.id ? updated : p)
-                  .sort((a, b) => Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned)))))
+                onUpdated={(updated) => {
+                  setPosts((prev) => {
+                    const next = prev.map((p) => p.id === updated.id ? updated : p);
+                    return next.sort(
+                      (a, b) => Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned)),
+                    );
+                  });
+                }}
               />
             ))}
           </div>
