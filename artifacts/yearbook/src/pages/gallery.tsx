@@ -1,8 +1,15 @@
-import { useListPhotos } from "@workspace/api-client-react";
-import { useState } from "react";
+import { getListPhotosQueryKey, useListPhotos } from "@workspace/api-client-react";
+import { useEffect, useRef, useState } from "react";
+import { useUser } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+
+const BASE = import.meta.env.BASE_URL;
 
 const CATEGORIES = [
   { id: "all", label: "Tất cả" },
@@ -14,13 +21,73 @@ const CATEGORIES = [
 ];
 
 export default function Gallery() {
+  const { user, isLoaded } = useUser();
+  const queryClient = useQueryClient();
   const [activeCategory, setActiveCategory] = useState("all");
   const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; caption?: string | null } | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
+  const [category, setCategory] = useState("classmates");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: photos, isLoading } = useListPhotos(
     activeCategory === "all" ? undefined : { category: activeCategory },
     { query: { queryKey: ["gallery", activeCategory] } }
   );
+
+  useEffect(() => {
+    if (!isLoaded || !user) {
+      setRole(null);
+      return;
+    }
+    fetch(`${BASE}api/auth/me`, { credentials: "include" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((profile) => setRole(profile?.role || null));
+  }, [isLoaded, user]);
+
+  const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn một tệp hình ảnh.");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      toast.error("Ảnh không được vượt quá 12MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const urlResponse = await fetch(`${BASE}api/storage/uploads/request-url`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!urlResponse.ok) throw new Error((await urlResponse.json()).detail || "Không thể chuẩn bị tải ảnh");
+      const { uploadURL, objectPath } = await urlResponse.json();
+      const uploadResponse = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!uploadResponse.ok) throw new Error("Không thể tải ảnh lên kho lưu trữ");
+      const saveResponse = await fetch(`${BASE}api/gallery`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: objectPath, caption: caption.trim() || null, category }),
+      });
+      if (!saveResponse.ok) throw new Error((await saveResponse.json()).detail || "Không thể lưu ảnh vào album");
+      setCaption("");
+      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+      toast.success("Đã thêm ảnh vào album kỷ niệm.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể thêm ảnh.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -41,6 +108,42 @@ export default function Gallery() {
           Từng khoảnh khắc, từng nụ cười được lưu giữ trọn vẹn.
         </motion.p>
       </div>
+
+      {role === "class_leader" || role === "teacher" ? (
+        <div className="max-w-3xl mx-auto mb-10 rounded-3xl border border-primary/20 bg-primary/5 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+              <ImagePlus className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold">Thêm ảnh kỷ niệm của lớp</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Ảnh sẽ được lưu vào Album Ảnh để cả lớp cùng xem.</p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Input
+                  value={caption}
+                  onChange={(event) => setCaption(event.target.value)}
+                  placeholder="Chú thích cho bức ảnh..."
+                  className="bg-background"
+                />
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {CATEGORIES.filter((item) => item.id !== "all").map((item) => (
+                    <option key={item.id} value={item.id}>{item.label}</option>
+                  ))}
+                </select>
+                <Button onClick={() => fileRef.current?.click()} disabled={uploading} className="shrink-0 gap-2">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                  {uploading ? "Đang tải..." : "Chọn ảnh"}
+                </Button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Category Filter */}
       <div className="flex flex-wrap justify-center gap-2 mb-12">

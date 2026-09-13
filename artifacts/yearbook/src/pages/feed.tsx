@@ -3,12 +3,19 @@ import { useUser, Show } from '@clerk/react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, MessageCircle, Trash2, Send, Image as ImageIcon,
-  LogIn, Users, X, Plus,
+  Heart, MessageCircle, Send, Image as ImageIcon,
+  LogIn, Users, X, Plus, MoreHorizontal, Pencil, Trash2,
+  Pin, Bookmark, Share2, Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -23,6 +30,10 @@ interface Post {
   image_url: string | null;
   likes_count: number;
   comments_count: number;
+  shares_count?: number;
+  saved?: boolean;
+  is_pinned?: boolean;
+  edited_at?: string | null;
   created_at: string;
 }
 
@@ -206,11 +217,30 @@ function CommentSection({ post, user, profile }: { post: Post; user: any; profil
 }
 
 /* ─── Single Post Card ─────────────────────────────────────────────────── */
-function PostCard({ post, user, profile, onDeleted }: { post: Post; user: any; profile: any; onDeleted: () => void }) {
+function PostCard({
+  post,
+  user,
+  profile,
+  onDeleted,
+  onUpdated,
+}: {
+  post: Post;
+  user: any;
+  profile: any;
+  onDeleted: () => void;
+  onUpdated: (post: Post) => void;
+}) {
   const [likes, setLikes] = useState(post.likes_count);
   const [liked, setLiked] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [saved, setSaved] = useState(Boolean(post.saved));
+  const [shares, setShares] = useState(post.shares_count || 0);
+  const [pinned, setPinned] = useState(Boolean(post.is_pinned));
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(post.content);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const canManage = user?.id === post.clerk_user_id || profile?.role === 'class_leader';
 
   useEffect(() => {
     if (!user) return;
@@ -236,12 +266,83 @@ function PostCard({ post, user, profile, onDeleted }: { post: Post; user: any; p
     if (res.ok) onDeleted();
   };
 
+  const toggleSave = async () => {
+    if (!user) {
+      toast.info('Đăng nhập để lưu bài viết.');
+      return;
+    }
+    const res = await fetch(`${BASE}api/feed/posts/${post.id}/save`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSaved(data.saved);
+      toast.success(data.saved ? 'Đã lưu bài viết.' : 'Đã bỏ lưu bài viết.');
+    }
+  };
+
+  const sharePost = async () => {
+    const shareUrl = `${window.location.origin}${BASE}feed#post-${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Kỷ Yếu Lớp 9A', text: post.content, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Đã sao chép liên kết bài viết.');
+      }
+    } catch {
+      return;
+    }
+    if (user) {
+      const res = await fetch(`${BASE}api/feed/posts/${post.id}/share`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) setShares((await res.json()).shares_count);
+    }
+  };
+
+  const togglePin = async () => {
+    const res = await fetch(`${BASE}api/feed/posts/${post.id}/pin`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setPinned(data.is_pinned);
+      onUpdated({ ...post, is_pinned: data.is_pinned });
+      toast.success(data.is_pinned ? 'Đã ghim bài viết.' : 'Đã bỏ ghim bài viết.');
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    setSavingEdit(true);
+    const res = await fetch(`${BASE}api/feed/posts/${post.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editText, image_url: post.image_url }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      onUpdated({ ...post, ...updated });
+      setEditing(false);
+      toast.success('Đã cập nhật bài viết.');
+    } else {
+      toast.error('Không thể cập nhật bài viết.');
+    }
+    setSavingEdit(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
       className="bg-card border border-border rounded-3xl p-5 group"
+      id={`post-${post.id}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -254,15 +355,42 @@ function PostCard({ post, user, profile, onDeleted }: { post: Post; user: any; p
             </div>
           </Link>
         </div>
-        {user?.id === post.clerk_user_id && (
-          <button onClick={deletePost} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1.5 rounded-full hover:bg-destructive/10">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-muted transition-colors" aria-label="Tùy chọn bài viết">
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {canManage && (
+              <DropdownMenuItem onClick={() => { setEditText(post.content); setEditing(true); }} className="gap-2">
+                <Pencil className="w-4 h-4" /> Chỉnh sửa bài viết
+              </DropdownMenuItem>
+            )}
+            {canManage && (
+              <DropdownMenuItem onClick={togglePin} className="gap-2">
+                <Pin className="w-4 h-4" /> {pinned ? 'Bỏ ghim bài viết' : 'Ghim bài viết'}
+              </DropdownMenuItem>
+            )}
+            {canManage && <DropdownMenuSeparator />}
+            {canManage && (
+              <DropdownMenuItem onClick={deletePost} className="gap-2 text-destructive focus:text-destructive">
+                <Trash2 className="w-4 h-4" /> Xóa bài viết
+              </DropdownMenuItem>
+            )}
+            {!canManage && <DropdownMenuItem disabled>Không có thao tác</DropdownMenuItem>}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Content */}
+      {pinned && (
+        <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-2">
+          <Pin className="w-3.5 h-3.5 fill-current" /> Bài viết đã ghim
+        </div>
+      )}
       <p className="text-sm leading-relaxed whitespace-pre-wrap mb-3">{post.content}</p>
+      {post.edited_at && <p className="text-[11px] text-muted-foreground -mt-2 mb-3">(đã chỉnh sửa)</p>}
 
       {/* Image */}
       {post.image_url && (
@@ -289,10 +417,38 @@ function PostCard({ post, user, profile, onDeleted }: { post: Post; user: any; p
           {post.comments_count > 0 && <span>{post.comments_count}</span>}
           <span className="hidden sm:inline">Bình luận</span>
         </button>
+        <button
+          onClick={sharePost}
+          className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Share2 className="w-4 h-4" />
+          {shares > 0 && <span>{shares}</span>}
+          <span className="hidden sm:inline">Chia sẻ</span>
+        </button>
+        <button
+          onClick={toggleSave}
+          className={`flex items-center gap-1.5 text-sm font-medium transition-colors ml-auto ${saved ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+        >
+          <Bookmark className={`w-4 h-4 ${saved ? 'fill-current' : ''}`} />
+          <span className="hidden sm:inline">{saved ? 'Đã lưu' : 'Lưu'}</span>
+        </button>
       </div>
 
       {/* Comments */}
       {showComments && <CommentSection post={post} user={user} profile={profile} />}
+
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Chỉnh sửa bài viết</DialogTitle></DialogHeader>
+          <Textarea value={editText} onChange={(event) => setEditText(event.target.value)} rows={5} className="resize-none" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(false)}>Hủy</Button>
+            <Button onClick={saveEdit} disabled={savingEdit || !editText.trim()} className="gap-2">
+              {savingEdit ? 'Đang lưu...' : <><Check className="w-4 h-4" /> Lưu thay đổi</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
@@ -365,6 +521,9 @@ export default function Feed() {
                 user={user}
                 profile={profile}
                 onDeleted={() => setPosts(prev => prev.filter(p => p.id !== post.id))}
+                onUpdated={(updated) => setPosts(prev => prev
+                  .map(p => p.id === updated.id ? updated : p)
+                  .sort((a, b) => Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned)))))
               />
             ))}
           </div>

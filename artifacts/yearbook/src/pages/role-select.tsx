@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useUser, Show } from '@clerk/react';
 import { useLocation, Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { GraduationCap, Users, ArrowRight, LogIn } from 'lucide-react';
+import { GraduationCap, Users, ArrowRight, Crown, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const BASE = import.meta.env.BASE_URL;
@@ -10,7 +10,7 @@ const BASE = import.meta.env.BASE_URL;
 export default function RoleSelect() {
   const { user } = useUser();
   const [, navigate] = useLocation();
-  const [selected, setSelected] = useState<'teacher' | 'student' | null>(null);
+  const [selected, setSelected] = useState<'teacher' | 'student' | 'class_leader' | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -58,11 +58,11 @@ export default function RoleSelect() {
               Xin chào, {user?.firstName || 'bạn'}!
             </h1>
             <p className="text-muted-foreground">
-              Bạn là giáo viên hay học sinh của lớp 9A?
+              Bạn là giáo viên, học sinh hay lớp trưởng của lớp 9A?
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             {/* Teacher card */}
             <button
               onClick={() => setSelected('teacher')}
@@ -113,6 +113,35 @@ export default function RoleSelect() {
                 </p>
               </div>
               {selected === 'student' && (
+                <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+            </button>
+
+            {/* Class leader card */}
+            <button
+              onClick={() => setSelected('class_leader')}
+              className={`group relative flex flex-col items-center gap-4 p-6 rounded-3xl border-2 transition-all cursor-pointer ${
+                selected === 'class_leader'
+                  ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                  : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
+              }`}
+            >
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-colors ${
+                selected === 'class_leader' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
+              }`}>
+                <Crown className="w-8 h-8" />
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-lg">Lớp trưởng</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Quản lý ảnh kỷ niệm và ghim bài viết quan trọng
+                </p>
+              </div>
+              {selected === 'class_leader' && (
                 <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                   <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

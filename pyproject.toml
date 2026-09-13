@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.139.2",
+    "google-cloud-storage>=3.14.1",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.4",
     "python-multipart>=0.0.32",

@@ -64,12 +64,12 @@ def get_me(clerk_user_id: str = Depends(require_user)):
 # ── Profile update ──────────────────────────────────────────────────────────
 # ── Role ────────────────────────────────────────────────────────────────────
 class RoleUpdate(BaseModel):
-    role: str  # "teacher" | "student"
+    role: str  # "teacher" | "student" | "class_leader"
 
 @router.put("/auth/me/role")
 def set_role(body: RoleUpdate, clerk_user_id: str = Depends(require_user)):
-    if body.role not in ("teacher", "student"):
-        raise HTTPException(status_code=400, detail="role phải là 'teacher' hoặc 'student'")
+    if body.role not in ("teacher", "student", "class_leader"):
+        raise HTTPException(status_code=400, detail="role không hợp lệ")
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
