@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser, Show } from '@clerk/react';
 import { Link, useParams, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, Edit3, Bell, Menu, Facebook } from 'lucide-react';
+import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, Edit3, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
@@ -91,6 +91,7 @@ export default function Messages() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'groups' | 'people'>('all');
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -110,6 +111,14 @@ export default function Messages() {
     fetch(`${BASE}api/groups`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => Array.isArray(data) && setGroups(data))
+      .catch(() => {});
+  };
+
+  const fetchFriends = () => {
+    if (!user) return;
+    fetch(`${BASE}api/friends/list`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => Array.isArray(data) && setFriends(data))
       .catch(() => {});
   };
 
@@ -138,9 +147,11 @@ export default function Messages() {
   useEffect(() => {
     if (!user) return;
     fetchConversations();
+    fetchFriends();
     // Poll every 4 seconds
     pollRef.current = setInterval(() => {
       fetchConversations();
+      fetchFriends();
       if (partnerId) fetchThread();
       if (groupId) fetchGroupThread();
     }, 4000);
@@ -217,13 +228,21 @@ export default function Messages() {
     }
   };
 
-  const filteredConvs = conversations.filter(c =>
-    displayName(c).toLowerCase().includes(searchQ.toLowerCase())
-  );
+  const filteredConvs = conversations
+    .filter(c => activeTab !== 'unread' || c.unread_count > 0)
+    .filter(c => displayName(c).toLowerCase().includes(searchQ.toLowerCase()));
   const filteredUsers = allUsers.filter(u =>
     displayName(u).toLowerCase().includes(userSearch.toLowerCase())
   );
-  const storyUsers = conversations.filter(conv => conv.photo_url || conv.online).slice(0, 6);
+  const onlineFriends = friends.filter(friend => friend.online);
+  const showGroups = activeTab === 'all' || activeTab === 'groups';
+  const showConversations = activeTab === 'all' || activeTab === 'unread';
+  const inboxTabs = [
+    { id: 'all' as const, label: 'Tất cả' },
+    { id: 'unread' as const, label: 'Chưa đọc' },
+    { id: 'groups' as const, label: 'Nhóm' },
+    { id: 'people' as const, label: 'Mọi người' },
+  ];
 
   return (
     <div className="container mx-auto px-0 md:px-4 py-0 md:py-8 max-w-5xl">
@@ -236,17 +255,21 @@ export default function Messages() {
       </Show>
 
       <Show when="signed-in">
-        <div className="min-h-[100dvh] md:min-h-0 flex flex-col bg-card md:h-[75vh] md:rounded-3xl border overflow-hidden shadow-sm">
+        <div className="min-h-[100dvh] md:min-h-0 flex flex-col bg-[#FFFDF7] md:h-[75vh] md:rounded-3xl border border-[#E8E0CC] overflow-hidden shadow-sm">
           {/* Mobile Messenger-style inbox header */}
           {!partnerId && !groupId && (
-            <div className="md:hidden bg-background">
+            <div className="md:hidden bg-[#FFFDF7]">
               <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-                <h1 className="text-[29px] leading-none font-bold tracking-tight text-[#087ef5]">messenger</h1>
+                <Link href="/" className="text-[22px] leading-none font-bold tracking-tight text-foreground">
+                  Kỷ Yếu Lớp 9A
+                </Link>
                 <div className="flex items-center gap-3">
+                  <button className="w-9 h-9 rounded-full hover:bg-[#F0EAD8] flex items-center justify-center" title="Tùy chọn">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
                   <button onClick={openNewChat} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center" title="Tin nhắn mới">
                     <Edit3 className="w-[19px] h-[19px]" />
                   </button>
-                  <Facebook className="w-7 h-7 fill-current" aria-label="Messenger" />
                 </div>
               </div>
               <div className="px-5 pb-3">
@@ -255,29 +278,21 @@ export default function Messages() {
                   <Input
                     value={searchQ}
                     onChange={e => setSearchQ(e.target.value)}
-                    placeholder="Hỏi Meta AI hoặc tìm kiếm"
-                    className="h-12 pl-11 rounded-full bg-muted border-0 text-[15px]"
+                    placeholder="Tìm kiếm trên Messenger"
+                    className="h-10 pl-10 rounded-full bg-[#F0EAD8] border-0 text-[13.5px]"
                   />
                 </div>
               </div>
-              <div className="flex gap-4 overflow-x-auto px-5 pb-4 scrollbar-none">
-                <button onClick={openNewChat} className="w-[62px] shrink-0 text-center">
-                  <div className="relative mx-auto w-[58px] h-[58px] rounded-full bg-muted flex items-center justify-center">
-                    <div className="w-full h-full rounded-full border-2 border-dashed border-muted-foreground/40 flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-foreground" />
-                    </div>
-                  </div>
-                  <span className="block mt-1.5 text-[12px] truncate">Tạo tin</span>
-                </button>
-                {storyUsers.map(conv => (
-                  <button key={conv.partner_id} onClick={() => navigate(`/tin-nhan/${conv.partner_id}`)} className="w-[62px] shrink-0 text-center">
-                    <div className="relative mx-auto w-[58px] h-[58px]">
-                      {conv.photo_url
-                        ? <img src={conv.photo_url} alt="" className="w-full h-full rounded-full object-cover ring-2 ring-background" />
-                        : <AvatarGradient name={displayName(conv)} className="w-full h-full" textClassName="text-lg" />}
-                      <span className={`absolute right-0 bottom-0 w-3.5 h-3.5 rounded-full border-2 border-background ${conv.online ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                    </div>
-                    <span className="block mt-1.5 text-[12px] truncate">{displayName(conv)}</span>
+              <div className="flex gap-1 overflow-x-auto px-5 pb-2 border-b border-[#E8E0CC] scrollbar-none">
+                {inboxTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                      activeTab === tab.id ? 'bg-[#EAF2FF] text-[#1465C0]' : 'text-foreground hover:bg-[#F0EAD8]'
+                    }`}
+                  >
+                    {tab.label}
                   </button>
                 ))}
               </div>
@@ -286,9 +301,9 @@ export default function Messages() {
 
           {/* Left sidebar — conversation list */}
           <div className={`w-full md:w-80 flex flex-col border-r shrink-0 ${partnerId || groupId ? 'hidden md:flex' : 'flex'}`}>
-            <div className="hidden md:block p-4 border-b">
+            <div className="hidden md:block p-4 border-b border-[#E8E0CC]">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-lg">Tin nhắn</h2>
+                <Link href="/" className="font-bold text-lg hover:text-[#B8862F] transition-colors">Kỷ Yếu Lớp 9A</Link>
                 <div className="flex items-center gap-1">
                   <button onClick={openNewChat} className="p-2 rounded-full hover:bg-muted transition-colors text-primary" title="Nhắn tin mới">
                     <Plus className="w-5 h-5" />
@@ -310,13 +325,50 @@ export default function Messages() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {groups.length > 0 && (
-                <div className="border-b pb-2">
+              {activeTab === 'people' ? (
+                onlineFriends.length > 0 ? (
+                  <div>
+                    <p className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Bạn bè đang online</p>
+                    {onlineFriends.map(friend => {
+                      const name = displayName(friend);
+                      return (
+                        <button
+                          key={friend.clerk_user_id}
+                          onClick={() => navigate(`/tin-nhan/${friend.clerk_user_id}`)}
+                          className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#F0EAD8]/60 transition-colors text-left"
+                        >
+                          <div className="relative shrink-0">
+                            {friend.photo_url
+                              ? <img src={friend.photo_url} alt="" className="w-11 h-11 rounded-full object-cover" />
+                              : <AvatarGradient name={name} className="w-11 h-11" textClassName="text-base" />}
+                            <span className="absolute right-0 bottom-0 w-3 h-3 rounded-full border-2 border-[#FFFDF7] bg-emerald-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{name}</p>
+                            <p className="text-xs text-emerald-600">Đang hoạt động</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-48 px-8 text-center text-muted-foreground text-sm">
+                    <Users className="w-9 h-9 mb-2 opacity-40" />
+                    <p>Không có người dùng nào online</p>
+                    <button onClick={openNewChat} className="mt-2 text-[#B8862F] hover:underline text-xs">
+                      Tìm người để kết bạn
+                    </button>
+                  </div>
+                )
+              ) : (
+              <>
+              {showGroups && groups.length > 0 && (
+                <div className="border-b border-[#E8E0CC] pb-2">
                   <p className="px-4 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Nhóm</p>
                   {groups.map(group => (
                     <button key={group.id} onClick={() => navigate(`/tin-nhan/nhom/${group.id}`)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${groupId === group.id ? 'bg-primary/5' : ''}`}>
-                      <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Users className="w-5 h-5" /></div>
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F0EAD8]/60 transition-colors text-left ${groupId === group.id ? 'bg-[#F0EAD8]' : ''}`}>
+                      <div className="w-11 h-11 rounded-full bg-[#F0EAD8] text-[#B8862F] flex items-center justify-center shrink-0"><Users className="w-5 h-5" /></div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{group.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{group.member_count} thành viên{group.last_message ? ` · ${group.last_message}` : ''}</p>
@@ -325,21 +377,30 @@ export default function Messages() {
                   ))}
                 </div>
               )}
-              {filteredConvs.length === 0 && (
+              {showGroups && activeTab === 'groups' && groups.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm">
+                  <Users className="w-8 h-8 mb-2 opacity-40" />
+                  <p>Chưa có nhóm nào</p>
+                  <button onClick={openGroupModal} className="mt-2 text-[#B8862F] hover:underline text-xs">
+                    Tạo nhóm từ bạn bè
+                  </button>
+                </div>
+              )}
+              {showConversations && filteredConvs.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm">
                   <MessageCircle className="w-8 h-8 mb-2 opacity-40" />
-                  <p>Chưa có cuộc trò chuyện nào</p>
-                  <button onClick={openNewChat} className="mt-2 text-primary hover:underline text-xs">
+                  <p>{activeTab === 'unread' ? 'Không có tin nhắn chưa đọc' : 'Chưa có cuộc trò chuyện nào'}</p>
+                  <button onClick={openNewChat} className="mt-2 text-[#B8862F] hover:underline text-xs">
                     Bắt đầu nhắn tin
                   </button>
                 </div>
               )}
-              {filteredConvs.map(conv => (
+              {showConversations && filteredConvs.map(conv => (
                 <button
                   key={conv.partner_id}
                   onClick={() => navigate(`/tin-nhan/${conv.partner_id}`)}
                   className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${
-                    partnerId === conv.partner_id ? 'bg-primary/5' : ''
+                    partnerId === conv.partner_id ? 'bg-[#F0EAD8]' : ''
                   }`}
                 >
                   <div className="relative shrink-0">
@@ -369,6 +430,8 @@ export default function Messages() {
                   </div>
                 </button>
               ))}
+              </>
+              )}
             </div>
           </div>
 
@@ -423,10 +486,10 @@ export default function Messages() {
                             }
                           </div>
                         )}
-                        <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${
+                         <div className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-[13.5px] ${
                           isMine
-                            ? 'bg-primary text-white rounded-br-sm'
-                            : 'bg-muted text-foreground rounded-bl-sm'
+                             ? 'bg-[#B8862F] text-white rounded-br-sm'
+                             : 'bg-[#F0EAD8] text-foreground rounded-bl-sm'
                         }`}>
                           {msg.content}
                         </div>
@@ -437,19 +500,19 @@ export default function Messages() {
                 </div>
 
                 {/* Input */}
-                <div className="p-3 border-t flex gap-2">
+                <div className="p-3 md:px-5 border-t border-[#E8E0CC] flex gap-3">
                   <Input
                     value={text}
                     onChange={e => setText(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                     placeholder="Nhập tin nhắn..."
-                    className="rounded-2xl bg-muted/50 border-0"
+                    className="rounded-[18px] bg-[#F0EAD8] border-0 text-[13.5px] px-3.5"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={!text.trim() || sending}
                     size="icon"
-                    className="rounded-2xl shrink-0"
+                    className="rounded-full shrink-0 bg-[#B8862F] hover:bg-[#9F7424]"
                   >
                     <Send className="w-4 h-4" />
                   </Button>
@@ -458,28 +521,6 @@ export default function Messages() {
             )}
           </div>
         </div>
-
-        {/* Bottom navigation mirrors Messenger on small screens. */}
-        {!partnerId && !groupId && (
-          <nav className="md:hidden sticky bottom-0 z-20 h-[68px] border-t bg-background flex items-center justify-around px-2">
-            <button onClick={() => navigate('/tin-nhan')} className="flex flex-col items-center gap-1 text-[#087ef5] text-[11px] font-medium">
-              <MessageCircle className="w-6 h-6 fill-current" />
-              Đoạn chat
-            </button>
-            <button onClick={openNewChat} className="flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
-              <Users className="w-6 h-6" />
-              Mọi người
-            </button>
-            <button onClick={() => navigate('/tin-nhan')} className="relative flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
-              <Bell className="w-6 h-6" />
-              Thông báo
-            </button>
-            <button onClick={openGroupModal} className="flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
-              <Menu className="w-6 h-6" />
-              Menu
-            </button>
-          </nav>
-        )}
 
         {/* New group modal */}
         <AnimatePresence>
