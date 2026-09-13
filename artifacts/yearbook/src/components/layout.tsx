@@ -154,7 +154,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="site-desktop-nav hidden md:flex items-center gap-1">
             {NAV_LINKS.map((link) => {
               const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
               const Icon = link.icon;
@@ -192,7 +192,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu toggle */}
             <button
-              className="md:hidden p-2 rounded-full hover:bg-muted transition-colors"
+              className="site-mobile-menu md:hidden p-2 rounded-full hover:bg-muted transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -202,7 +202,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t bg-background/95 backdrop-blur-md">
+          <div className="site-mobile-menu-panel md:hidden border-t bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
               {NAV_LINKS.map((link) => {
                 const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));

@@ -131,6 +131,25 @@
   }
 }
 
+/*
+ * Some Android browsers keep a wide CSS viewport even when the device is
+ * physically narrow. Keep the mobile navigation usable in that case instead
+ * of letting the desktop links render as a tiny row.
+ */
+@media screen and (max-device-width: 767px) {
+  .site-desktop-nav {
+    display: none !important;
+  }
+
+  .site-mobile-menu {
+    display: flex !important;
+  }
+
+  .site-mobile-menu-panel {
+    display: block !important;
+  }
+}
+
 /* Clerk placeholder contrast fix */
 .cl-formFieldInput::placeholder {
   color: hsl(25 15% 60%);
