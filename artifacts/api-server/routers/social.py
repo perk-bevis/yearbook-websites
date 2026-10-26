@@ -191,7 +191,13 @@ def list_groups(user_id: str = Depends(require_user)):
         cur.execute(
             """
             SELECT g.id, g.name, g.created_by, g.created_at,
-                   (SELECT content FROM group_messages gm WHERE gm.group_id = g.id ORDER BY gm.created_at DESC LIMIT 1) AS last_message,
+                   (SELECT CASE
+                       WHEN gm.content LIKE 'YB_ATTACHMENT:%%' AND gm.content LIKE '%%"type":"audio"%%' THEN 'Tin nhắn thoại'
+                       WHEN gm.content LIKE 'YB_ATTACHMENT:%%' AND gm.content LIKE '%%"type":"image"%%' THEN 'Đã gửi ảnh'
+                       WHEN gm.content LIKE 'YB_ATTACHMENT:%%' THEN 'Đã gửi tệp'
+                       ELSE gm.content
+                    END
+                    FROM group_messages gm WHERE gm.group_id = g.id ORDER BY gm.created_at DESC LIMIT 1) AS last_message,
                    (SELECT created_at FROM group_messages gm WHERE gm.group_id = g.id ORDER BY gm.created_at DESC LIMIT 1) AS last_at,
                    (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) AS member_count
             FROM group_conversations g

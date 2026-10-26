@@ -2,12 +2,48 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser, Show } from '@clerk/react';
 import { Link, useParams, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check, Edit3, MoreHorizontal } from 'lucide-react';
+import {
+  Send, Search, ArrowLeft, MessageCircle, LogIn, Plus, X, Users, Check,
+  Edit3, MoreHorizontal, Camera, Image as ImageIcon, Mic, Square, Smile,
+  ThumbsUp, Paperclip, FileText, Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
+import { toast } from 'sonner';
 
 const BASE = import.meta.env.BASE_URL;
+const ATTACHMENT_PREFIX = 'YB_ATTACHMENT:';
+const QUICK_EMOJIS = ['😀', '😂', '🥰', '😍', '😢', '😮', '👍', '❤️', '🎉', '🙏'];
+
+type ChatAttachment = {
+  type: 'image' | 'audio' | 'file';
+  url: string;
+  name: string;
+  content_type: string;
+  size: number;
+  duration_seconds?: number;
+};
+
+function parseAttachment(content: string): ChatAttachment | null {
+  if (!content.startsWith(ATTACHMENT_PREFIX)) return null;
+  try {
+    const value = JSON.parse(content.slice(ATTACHMENT_PREFIX.length)) as ChatAttachment;
+    if (
+      !['image', 'audio', 'file'].includes(value.type) ||
+      typeof value.url !== 'string' ||
+      !value.url.includes('/api/messages/attachments/')
+    ) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function formatDuration(seconds = 0) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
 
 interface Conversation {
   partner_id: string;
@@ -92,8 +128,21 @@ export default function Messages() {
   const [groupName, setGroupName] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'groups' | 'people'>('all');
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const cancelRecordingRef = useRef(false);
+  const recordingStartedAtRef = useRef(0);
 
   const partnerId = params?.partnerId;
   const groupId = params?.groupId ? Number(params.groupId) : undefined;
@@ -169,31 +218,171 @@ export default function Messages() {
     }
   }, [partnerId, groupId, user]);
 
-  const sendMessage = async () => {
-    if (!text.trim() || (!partnerId && !groupId) || sending) return;
+  const postMessage = async (content: string, clearDraft = false) => {
+    if (!content.trim() || (!partnerId && !groupId) || sending) return false;
     setSending(true);
     try {
       const url = groupId ? `${BASE}api/groups/${groupId}/messages` : `${BASE}api/messages/send`;
       const body = groupId
-        ? { content: text.trim() }
-        : { receiver_id: partnerId, content: text.trim() };
+        ? { content: content.trim() }
+        : { receiver_id: partnerId, content: content.trim() };
       const res = await fetch(url, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (res.ok) {
-        setText('');
-        if (groupId) fetchGroupThread();
-        else {
-          fetchThread();
-          fetchConversations();
-        }
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || 'Không gửi được tin nhắn.');
       }
+      if (clearDraft) setText('');
+      if (groupId) fetchGroupThread();
+      else fetchThread();
+      fetchConversations();
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không gửi được tin nhắn.');
+      return false;
     } finally {
       setSending(false);
     }
   };
+
+  const sendMessage = () => postMessage(text.trim(), true);
+
+  const uploadAttachment = async (file: File | Blob, kind: 'image' | 'audio' | 'file', durationSeconds?: number) => {
+    if (!partnerId && !groupId) return;
+    const maxBytes = kind === 'image' ? 12 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (!file.size || file.size > maxBytes) {
+      toast.error(kind === 'image' ? 'Ảnh không được vượt quá 12 MB.' : 'Tệp không được vượt quá 25 MB.');
+      return;
+    }
+
+    const contentType = file.type || (kind === 'audio' ? 'audio/webm' : '');
+    const name = file instanceof File ? file.name : `Tin nhắn thoại.${contentType.includes('mp4') ? 'm4a' : 'webm'}`;
+    setUploadingAttachment(true);
+    setAttachmentMenuOpen(false);
+    try {
+      const request = await fetch(`${BASE}api/messages/attachments/request-url`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind, content_type: contentType, size: file.size }),
+      });
+      const uploadDetails = await request.json().catch(() => ({}));
+      if (!request.ok) throw new Error(uploadDetails.detail || 'Không thể chuẩn bị tải tệp lên.');
+
+      const uploaded = await fetch(uploadDetails.uploadURL, {
+        method: 'PUT',
+        headers: { 'Content-Type': contentType },
+        body: file,
+      });
+      if (!uploaded.ok) throw new Error('Không thể tải tệp lên kho lưu trữ.');
+
+      const attachment: ChatAttachment = {
+        type: kind,
+        url: `${BASE}api/messages/attachments/${uploadDetails.objectName}`,
+        name,
+        content_type: contentType,
+        size: file.size,
+        ...(durationSeconds ? { duration_seconds: durationSeconds } : {}),
+      };
+      const delivered = await postMessage(`${ATTACHMENT_PREFIX}${JSON.stringify(attachment)}`);
+      if (delivered) toast.success(kind === 'audio' ? 'Đã gửi tin nhắn thoại.' : 'Đã gửi tệp đính kèm.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể gửi tệp đính kèm.');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+
+  const handleSelectedFile = (event: React.ChangeEvent<HTMLInputElement>, forcedKind?: 'image') => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const mime = file.type.toLowerCase().split(';', 1)[0];
+    const isAudio = mime.startsWith('audio/') || /\.(m4a|mp3|ogg|wav|webm|aac|3gp)$/i.test(file.name);
+    const kind = forcedKind || (mime.startsWith('image/') ? 'image' : isAudio ? 'audio' : 'file');
+    void uploadAttachment(file, kind);
+  };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      toast.error('Trình duyệt này chưa hỗ trợ ghi âm. Bạn có thể chọn tệp ghi âm có sẵn.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+      cancelRecordingRef.current = false;
+      recordingStartedAtRef.current = Date.now();
+      const mimeType = [
+        'audio/webm;codecs=opus',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+        'audio/webm',
+      ].find(type => MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = event => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+      recorder.onerror = () => toast.error('Đã xảy ra lỗi khi ghi âm.');
+      recorder.onstop = () => {
+        stream.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        if (cancelRecordingRef.current) {
+          cancelRecordingRef.current = false;
+          setRecordSeconds(0);
+          return;
+        }
+        const duration = Math.max(1, Math.round((Date.now() - recordingStartedAtRef.current) / 1000));
+        const blob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        recordingChunksRef.current = [];
+        if (blob.size) void uploadAttachment(blob, 'audio', duration);
+        else toast.error('Bản ghi âm trống. Hãy thử ghi lại.');
+      };
+      recorder.start(250);
+      setRecordSeconds(0);
+      setIsRecording(true);
+    } catch {
+      toast.error('Không thể dùng micro. Hãy cấp quyền truy cập micro rồi thử lại.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+  };
+
+  const cancelRecording = () => {
+    cancelRecordingRef.current = true;
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+    recordingStreamRef.current?.getTracks().forEach(track => track.stop());
+    setIsRecording(false);
+    setRecordSeconds(0);
+  };
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const timer = window.setInterval(() => {
+      const seconds = Math.floor((Date.now() - recordingStartedAtRef.current) / 1000);
+      setRecordSeconds(seconds);
+      if (seconds >= 300 && mediaRecorderRef.current?.state === 'recording') {
+        toast.info('Đã đạt giới hạn ghi âm 5 phút.');
+        mediaRecorderRef.current.stop();
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isRecording]);
+
+  useEffect(() => () => {
+    mediaRecorderRef.current?.stop();
+    recordingStreamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
 
   const openNewChat = async () => {
     if (!allUsers.length) {
@@ -476,6 +665,7 @@ export default function Messages() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {(groupId ? groupMessages : messages).map(msg => {
                     const isMine = msg.sender_id === user?.id;
+                    const attachment = parseAttachment(msg.content);
                     return (
                       <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                         {!isMine && (
@@ -491,7 +681,37 @@ export default function Messages() {
                              ? 'bg-[#B8862F] text-white rounded-br-sm'
                              : 'bg-[#F0EAD8] text-foreground rounded-bl-sm'
                         }`}>
-                          {msg.content}
+                          {attachment?.type === 'image' ? (
+                            <a href={attachment.url} target="_blank" rel="noreferrer" aria-label={`Mở ảnh ${attachment.name}`}>
+                              <img
+                                src={attachment.url}
+                                alt={attachment.name || 'Ảnh đính kèm'}
+                                loading="lazy"
+                                className="max-h-64 max-w-full rounded-xl object-contain"
+                              />
+                            </a>
+                          ) : attachment?.type === 'audio' ? (
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <Mic className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{attachment.name || 'Tin nhắn thoại'}</span>
+                                {attachment.duration_seconds ? <span className="shrink-0 opacity-75">{formatDuration(attachment.duration_seconds)}</span> : null}
+                              </div>
+                              <audio controls preload="metadata" src={attachment.url} className="block h-9 w-[min(250px,65vw)] max-w-full" />
+                            </div>
+                          ) : attachment?.type === 'file' ? (
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex min-w-0 items-center gap-2"
+                            >
+                              <FileText className="w-5 h-5 shrink-0" />
+                              <span className="truncate underline underline-offset-2">{attachment.name || 'Tệp đính kèm'}</span>
+                            </a>
+                          ) : (
+                            msg.content
+                          )}
                         </div>
                       </div>
                     );
@@ -500,22 +720,162 @@ export default function Messages() {
                 </div>
 
                 {/* Input */}
-                <div className="p-3 md:px-5 border-t border-[#E8E0CC] flex gap-3">
-                  <Input
-                    value={text}
-                    onChange={e => setText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                    placeholder="Nhập tin nhắn..."
-                    className="rounded-[18px] bg-[#F0EAD8] border-0 text-[13.5px] px-3.5"
+                <div className="relative border-t border-[#E8E0CC] bg-[#FFFDF7] px-2 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-4">
+                  {attachmentMenuOpen && (
+                    <div className="absolute bottom-full left-2 z-20 mb-2 w-52 rounded-2xl border border-[#E8E0CC] bg-white p-1.5 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => { setAttachmentMenuOpen(false); fileInputRef.current?.click(); }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-[#F0EAD8]"
+                      >
+                        <Paperclip className="h-4 w-4 text-[#1465C0]" />
+                        Chọn ảnh, âm thanh hoặc tệp
+                      </button>
+                    </div>
+                  )}
+                  {emojiPickerOpen && (
+                    <div className="absolute bottom-full right-12 z-20 mb-2 grid grid-cols-5 gap-1 rounded-2xl border border-[#E8E0CC] bg-white p-2 shadow-lg">
+                      {QUICK_EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => { setText(current => `${current}${emoji}`); setEmojiPickerOpen(false); }}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl hover:bg-[#F0EAD8]"
+                          aria-label={`Chèn ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={event => handleSelectedFile(event, 'image')}
                   />
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!text.trim() || sending}
-                    size="icon"
-                    className="rounded-full shrink-0 bg-[#B8862F] hover:bg-[#9F7424]"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={event => handleSelectedFile(event, 'image')}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,audio/*,.pdf,.txt,.doc,.docx"
+                    className="hidden"
+                    onChange={event => handleSelectedFile(event)}
+                  />
+                  <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setAttachmentMenuOpen(open => !open); setEmojiPickerOpen(false); }}
+                      disabled={uploadingAttachment || isRecording}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#1465C0] hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9"
+                      title="Thêm tệp"
+                      aria-label="Thêm tệp đính kèm"
+                    >
+                      <Plus className="h-6 w-6" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={uploadingAttachment || isRecording}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#1465C0] hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9"
+                      title="Chụp ảnh"
+                      aria-label="Chụp ảnh"
+                    >
+                      <Camera className="h-[22px] w-[22px]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingAttachment || isRecording}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#1465C0] hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9"
+                      title="Chọn ảnh"
+                      aria-label="Chọn ảnh từ thiết bị"
+                    >
+                      <ImageIcon className="h-[22px] w-[22px]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={uploadingAttachment || sending}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9 ${isRecording ? 'text-red-600' : 'text-[#1465C0]'}`}
+                      title={isRecording ? 'Dừng và gửi ghi âm' : 'Ghi âm'}
+                      aria-label={isRecording ? 'Dừng và gửi ghi âm' : 'Bắt đầu ghi âm'}
+                    >
+                      {isRecording ? <Square className="h-5 w-5 fill-current" /> : <Mic className="h-[22px] w-[22px]" />}
+                    </button>
+
+                    {isRecording ? (
+                      <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-[#F0EAD8] px-3 text-sm">
+                        <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-600" />
+                        <span className="truncate">Đang ghi âm</span>
+                        <span className="shrink-0 tabular-nums">{formatDuration(recordSeconds)}</span>
+                        <button
+                          type="button"
+                          onClick={cancelRecording}
+                          className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5"
+                          title="Hủy ghi âm"
+                          aria-label="Hủy ghi âm"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Input
+                        value={text}
+                        onChange={event => setText(event.target.value)}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            void sendMessage();
+                          }
+                        }}
+                        placeholder={uploadingAttachment ? 'Đang gửi tệp...' : 'Nhắn tin'}
+                        disabled={uploadingAttachment}
+                        className="h-10 min-w-0 flex-1 rounded-full border-0 bg-[#F0EAD8] px-3.5 text-[15px] focus-visible:ring-1 focus-visible:ring-[#1465C0]"
+                      />
+                    )}
+
+                    {!isRecording && (
+                      <button
+                        type="button"
+                        onClick={() => { setEmojiPickerOpen(open => !open); setAttachmentMenuOpen(false); }}
+                        disabled={uploadingAttachment}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#1465C0] hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9"
+                        title="Chọn biểu tượng cảm xúc"
+                        aria-label="Chọn biểu tượng cảm xúc"
+                      >
+                        <Smile className="h-[22px] w-[22px]" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (text.trim()) void sendMessage();
+                        else if (!uploadingAttachment && !sending) void postMessage('👍');
+                      }}
+                      disabled={sending || uploadingAttachment}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#1465C0] hover:bg-[#EAF2FF] disabled:opacity-40 sm:h-9 sm:w-9"
+                      title={text.trim() ? 'Gửi tin nhắn' : 'Gửi lượt thích'}
+                      aria-label={text.trim() ? 'Gửi tin nhắn' : 'Gửi lượt thích'}
+                    >
+                      {sending || uploadingAttachment
+                        ? <Loader2 className="h-5 w-5 animate-spin" />
+                        : text.trim()
+                          ? <Send className="h-[21px] w-[21px]" />
+                          : <ThumbsUp className="h-[22px] w-[22px] fill-current" />}
+                    </button>
+                  </div>
+                  {uploadingAttachment && (
+                    <p className="mt-1 px-1 text-[11px] text-muted-foreground">Đang tải tệp lên…</p>
+                  )}
                 </div>
               </>
             )}
