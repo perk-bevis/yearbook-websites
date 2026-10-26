@@ -148,6 +148,35 @@
   .site-mobile-menu-panel {
     display: block !important;
   }
+
+  .memories-page .memories-hero {
+    height: 30svh !important;
+    min-height: 220px !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .memories-page .memories-list {
+    width: 100% !important;
+    max-width: 48rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .memories-page .memory-card {
+    padding: 1.25rem !important;
+    border-radius: 1.5rem !important;
+  }
+
+  .memories-page .memory-card-title {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+
+  .memories-page .memory-card-copy,
+  .memories-page .memory-card-copy p {
+    font-size: 0.875rem !important;
+    line-height: 1.5rem !important;
+  }
 }
 
 /* Clerk placeholder contrast fix */

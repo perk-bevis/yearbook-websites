@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { AvatarGradient } from '@/components/ui/avatar-gradient';
+import { toast } from 'sonner';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -59,7 +60,16 @@ function AvatarUpload({ profile, user, onUpdated }: { profile: UserProfile | nul
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn tệp hình ảnh.');
+      return;
+    }
+    if (file.size > 3_500_000) {
+      toast.error('Ảnh đại diện không được vượt quá 3,5 MB.');
+      return;
+    }
     setUploading(true);
     const reader = new FileReader();
     reader.onload = async () => {
@@ -70,13 +80,22 @@ function AvatarUpload({ profile, user, onUpdated }: { profile: UserProfile | nul
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data_url: dataUrl }),
         });
-        if (res.ok) {
-          const data = await res.json();
-          onUpdated(data.photo_url);
-        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || 'Không thể cập nhật ảnh đại diện.');
+        onUpdated(data.photo_url);
+        window.dispatchEvent(new CustomEvent('yearbook:profile-avatar-updated', {
+          detail: { photoUrl: data.photo_url },
+        }));
+        toast.success('Đã cập nhật ảnh đại diện.');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Không thể cập nhật ảnh đại diện.');
       } finally {
         setUploading(false);
       }
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      toast.error('Không đọc được tệp ảnh. Vui lòng thử lại.');
     };
     reader.readAsDataURL(file);
   };

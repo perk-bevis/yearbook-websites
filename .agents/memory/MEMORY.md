@@ -1,2 +1,3 @@
 - [Database schema compatibility](schema-compatibility.md) — verify app_users columns before adding social features because deployed schemas can lag the current API code.
 - [Album image storage](album-image-storage.md) — keep album image bytes in App Storage and save only object paths in PostgreSQL.
+- [Mobile responsive baseline](mobile-responsive-baseline.md) — yearbook pages must remain usable at phone widths; don't let desktop navigation shrink into a tiny row.

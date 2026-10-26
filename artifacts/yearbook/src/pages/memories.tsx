@@ -9,9 +9,9 @@ export default function Memories() {
   const { data: memories, isLoading } = useListMemories();
 
   return (
-    <div className="flex-1 bg-muted/20 pb-12 md:pb-24">
+    <div className="memories-page flex-1 bg-muted/20 pb-12 md:pb-24">
       {/* Memories Hero */}
-      <section className="relative h-[30vh] min-h-[220px] md:h-[40vh] md:min-h-[300px] flex items-center justify-center overflow-hidden mb-8 md:mb-16">
+      <section className="memories-hero relative h-[30vh] min-h-[220px] md:h-[40vh] md:min-h-[300px] flex items-center justify-center overflow-hidden mb-8 md:mb-16">
         <div className="absolute inset-0 z-0">
           <img 
             src="/attached_assets/generated_images/memories-group.jpg" 
@@ -44,7 +44,7 @@ export default function Memories() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 max-w-3xl">
+      <div className="memories-list container mx-auto px-4 max-w-3xl">
         {isLoading ? (
           <div className="space-y-8">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 rounded-3xl" />)}
@@ -62,7 +62,7 @@ export default function Memories() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className="bg-card rounded-3xl md:rounded-[2.5rem] p-5 sm:p-7 md:p-10 border shadow-sm relative"
+                className="memory-card bg-card rounded-3xl md:rounded-[2.5rem] p-5 sm:p-7 md:p-10 border shadow-sm relative"
               >
                 <Quote className="absolute top-5 right-5 md:top-8 md:right-8 w-8 h-8 md:w-12 md:h-12 text-primary/10 rotate-180" />
                 
@@ -78,9 +78,9 @@ export default function Memories() {
                   </div>
                 </div>
 
-                <h3 className="text-xl md:text-2xl font-display font-bold mb-3 md:mb-4 text-foreground pr-8">{memory.title}</h3>
+                <h3 className="memory-card-title text-xl md:text-2xl font-display font-bold mb-3 md:mb-4 text-foreground pr-8">{memory.title}</h3>
                 
-                <div className="prose prose-sm md:prose-lg dark:prose-invert max-w-none mb-4 md:mb-6">
+                <div className="memory-card-copy prose prose-sm md:prose-lg dark:prose-invert max-w-none mb-4 md:mb-6">
                   <p className="whitespace-pre-line leading-relaxed text-muted-foreground text-sm md:text-base">
                     {memory.content}
                   </p>

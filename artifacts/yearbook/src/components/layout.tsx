@@ -54,11 +54,52 @@ function UserMenu() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const signInUrl = `${window.location.origin}${basePath}/sign-in`;
 
   const displayName = user?.firstName || user?.fullName || 'Tài khoản';
-  const avatar = user?.imageUrl;
+  const avatar = profileAvatar || user?.imageUrl;
+
+  useEffect(() => {
+    if (!user) {
+      setProfileAvatar(null);
+      return;
+    }
+
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let attempt = 0;
+    const loadProfileAvatar = async () => {
+      try {
+        const response = await fetch(`${BASE}api/auth/me`, { credentials: 'include' });
+        if (response.ok) {
+          const profile = await response.json();
+          if (!cancelled) setProfileAvatar(profile.photo_url || null);
+          return;
+        }
+      } catch {
+        // Retry briefly while the signed-in user is being synced with the API.
+      }
+      if (!cancelled && attempt < 3) {
+        attempt += 1;
+        retryTimer = setTimeout(loadProfileAvatar, 500);
+      }
+    };
+
+    const onAvatarUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ photoUrl?: string | null }>).detail;
+      setProfileAvatar(detail?.photoUrl || null);
+    };
+
+    window.addEventListener('yearbook:profile-avatar-updated', onAvatarUpdated);
+    void loadProfileAvatar();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener('yearbook:profile-avatar-updated', onAvatarUpdated);
+    };
+  }, [user?.id]);
 
   return (
     <div className="relative">
