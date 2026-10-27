@@ -13,10 +13,18 @@ export default function Students() {
   const { data: frames } = useListFrames();
   const [search, setSearch] = useState("");
 
-  const filteredStudents = students?.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || 
-    (s.nickname && s.nickname.toLowerCase().includes(search.toLowerCase()))
-  ) || [];
+  // Ép kiểu an toàn: đảm bảo students và frames luôn là mảng, tránh lỗi "is not a function"
+  const safeStudents = Array.isArray(students) ? students : [];
+  const safeFrames = Array.isArray(frames) ? frames : [];
+
+  const filteredStudents = safeStudents.filter(s => {
+    const name = s?.name || "";
+    const nickname = s?.nickname || "";
+    return (
+      name.toLowerCase().includes(search.toLowerCase()) || 
+      nickname.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -27,8 +35,8 @@ export default function Students() {
   };
 
   const getStudentFrame = (frameId?: number | null) => {
-    if (!frameId || !frames) return null;
-    return frames.find(f => f.id === frameId);
+    if (!frameId || safeFrames.length === 0) return null;
+    return safeFrames.find(f => f.id === frameId);
   };
 
   return (
