@@ -1,4 +1,3 @@
-
 import { useListStudents, useListFrames } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { useState } from "react";
