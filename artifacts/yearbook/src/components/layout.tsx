@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, GraduationCap, Frame, LogIn, UserCircle, Crown, LogOut, BookOpen, Newspaper, MessageCircle } from 'lucide-react';
+import { Menu, X, Image as ImageIcon, BookHeart, Clock, Users, UsersRound, GraduationCap, Frame, LogIn, UserCircle, Crown, LogOut, BookOpen, Newspaper, MessageCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ const BASE = import.meta.env.BASE_URL;
 const NAV_LINKS = [
   { href: '/', label: 'Trang chủ', icon: BookHeart },
   { href: '/students', label: 'Bạn học', icon: Users },
+  { href: '/ban-be', label: 'Bạn bè', icon: UsersRound },
   { href: '/gallery', label: 'Album ảnh', icon: ImageIcon },
   { href: '/memories', label: 'Kỷ niệm', icon: BookHeart },
   { href: '/events', label: 'Dòng thời gian', icon: Clock },

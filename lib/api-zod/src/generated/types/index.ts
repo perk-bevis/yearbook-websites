@@ -6,18 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './class';
+export * from './cohort';
 export * from './event';
 export * from './eventInput';
 export * from './eventUpdate';
 export * from './frame';
 export * from './frameInput';
+export * from './friendActionResult';
+export * from './friendActionResultStatus';
+export * from './friendOverview';
+export * from './friendRequestBody';
+export * from './friendSearchResult';
 export * from './healthStatus';
+export * from './listClassesParams';
 export * from './listPhotosParams';
 export * from './memory';
 export * from './memoryInput';
 export * from './memoryUpdate';
 export * from './photo';
 export * from './photoInput';
+export * from './searchUsersParams';
+export * from './socialUser';
+export * from './socialUserFriendStatus';
 export * from './stats';
 export * from './student';
 export * from './studentFrameInput';

@@ -529,6 +529,174 @@ paths:
               schema:
                 $ref: "#/components/schemas/Stats"
 
+  /cohorts:
+    get:
+      operationId: listCohorts
+      tags: [friends]
+      summary: List available cohorts
+      responses:
+        "200":
+          description: Cohort filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cohort"
+
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [friends]
+      summary: List available classes
+      parameters:
+        - name: cohort_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Class"
+
+  /users/search:
+    get:
+      operationId: searchUsers
+      tags: [friends]
+      summary: Search users visible to the current user
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        - name: cohort_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: class_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Paginated users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendSearchResult"
+
+  /friends:
+    get:
+      operationId: getFriendsOverview
+      tags: [friends]
+      summary: List friends, requests, and suggestions
+      responses:
+        "200":
+          description: Friend overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendOverview"
+
+  /friends/request:
+    post:
+      operationId: requestFriendship
+      tags: [friends]
+      summary: Send a friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendRequestBody"
+      responses:
+        "201":
+          description: Request result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendActionResult"
+
+  /friends/{request_id}/accept:
+    post:
+      operationId: acceptFriendRequest
+      tags: [friends]
+      summary: Accept an incoming friend request
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendActionResult"
+
+  /friends/{request_id}/decline:
+    post:
+      operationId: declineFriendRequest
+      tags: [friends]
+      summary: Decline an incoming friend request
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendActionResult"
+
+  /friends/{target_id}:
+    delete:
+      operationId: removeFriend
+      tags: [friends]
+      summary: Remove a friend or cancel a request
+      parameters:
+        - name: target_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Relationship removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendActionResult"
+
 components:
   schemas:
     HealthStatus:
@@ -538,6 +706,127 @@ components:
           type: string
       required:
         - status
+
+    Cohort:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        year:
+          type: integer
+        school_name:
+          type: string
+      required: [id, name, year, school_name]
+
+    Class:
+      type: object
+      properties:
+        id:
+          type: integer
+        cohort_id:
+          type: integer
+        name:
+          type: string
+        cohort_name:
+          type: string
+      required: [id, cohort_id, name]
+
+    SocialUser:
+      type: object
+      properties:
+        clerk_user_id:
+          type: string
+        full_name:
+          type: ["string", "null"]
+        nickname:
+          type: ["string", "null"]
+        photo_url:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+        school_name:
+          type: ["string", "null"]
+        class_name:
+          type: ["string", "null"]
+        cohort_id:
+          type: ["integer", "null"]
+        class_id:
+          type: ["integer", "null"]
+        online:
+          type: boolean
+        last_seen_at:
+          type: ["string", "null"]
+        friend_status:
+          type: string
+          enum: [self, friends, outgoing, incoming, none]
+        request_id:
+          type: ["integer", "null"]
+        mutual_count:
+          type: integer
+        created_at:
+          type: ["string", "null"]
+        sender_id:
+          type: string
+        target_id:
+          type: string
+      required: [clerk_user_id]
+
+    FriendSearchResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialUser"
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+      required: [items, total, page, page_size]
+
+    FriendOverview:
+      type: object
+      properties:
+        friends:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialUser"
+        incoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialUser"
+        outgoing:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialUser"
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialUser"
+      required: [friends, incoming, outgoing, suggestions]
+
+    FriendRequestBody:
+      type: object
+      properties:
+        target_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required: [target_id]
+
+    FriendActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [friends, outgoing, incoming, none]
+        request_id:
+          type: ["integer", "null"]
+      required: [status]
 
     # ── Student ──
     Student:

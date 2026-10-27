@@ -9,6 +9,100 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface Cohort {
+  id: number;
+  name: string;
+  year: number;
+  school_name: string;
+}
+
+export interface Class {
+  id: number;
+  cohort_id: number;
+  name: string;
+  cohort_name?: string;
+}
+
+export type SocialUserFriendStatus = typeof SocialUserFriendStatus[keyof typeof SocialUserFriendStatus];
+
+
+export const SocialUserFriendStatus = {
+  self: 'self',
+  friends: 'friends',
+  outgoing: 'outgoing',
+  incoming: 'incoming',
+  none: 'none',
+} as const;
+
+export interface SocialUser {
+  clerk_user_id: string;
+  /** @nullable */
+  full_name?: string | null;
+  /** @nullable */
+  nickname?: string | null;
+  /** @nullable */
+  photo_url?: string | null;
+  /** @nullable */
+  role?: string | null;
+  /** @nullable */
+  school_name?: string | null;
+  /** @nullable */
+  class_name?: string | null;
+  /** @nullable */
+  cohort_id?: number | null;
+  /** @nullable */
+  class_id?: number | null;
+  online?: boolean;
+  /** @nullable */
+  last_seen_at?: string | null;
+  friend_status?: SocialUserFriendStatus;
+  /** @nullable */
+  request_id?: number | null;
+  mutual_count?: number;
+  /** @nullable */
+  created_at?: string | null;
+  sender_id?: string;
+  target_id?: string;
+}
+
+export interface FriendSearchResult {
+  items: SocialUser[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface FriendOverview {
+  friends: SocialUser[];
+  incoming: SocialUser[];
+  outgoing: SocialUser[];
+  suggestions: SocialUser[];
+}
+
+export interface FriendRequestBody {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  target_id: string;
+}
+
+export type FriendActionResultStatus = typeof FriendActionResultStatus[keyof typeof FriendActionResultStatus];
+
+
+export const FriendActionResultStatus = {
+  friends: 'friends',
+  outgoing: 'outgoing',
+  incoming: 'incoming',
+  none: 'none',
+} as const;
+
+export interface FriendActionResult {
+  status: FriendActionResultStatus;
+  /** @nullable */
+  request_id?: number | null;
+}
+
 export interface Student {
   id: number;
   name: string;
@@ -208,5 +302,27 @@ export interface Stats {
 
 export type ListPhotosParams = {
 category?: string;
+};
+
+export type ListClassesParams = {
+cohort_id?: number;
+};
+
+export type SearchUsersParams = {
+/**
+ * @maxLength 80
+ */
+q?: string;
+cohort_id?: number;
+class_id?: number;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+page_size?: number;
 };
 

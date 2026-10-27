@@ -24,6 +24,7 @@ import Subscribe from '@/pages/subscribe';
 import Onboarding from '@/pages/onboarding';
 import RoleSelect from '@/pages/role-select';
 import Messages from '@/pages/messages';
+import Friends from '@/pages/friends';
 import NotFound from '@/pages/not-found';
 
 // ── Clerk config ─────────────────────────────────────────────────────────────
@@ -164,6 +165,7 @@ function Router() {
             <Route path="/teachers" component={Teachers} />
             <Route path="/frames" component={Frames} />
             <Route path="/feed" component={Feed} />
+            <Route path="/ban-be" component={Friends} />
             <Route path="/profile" component={Profile} />
             <Route path="/profile/:userId" component={PublicProfile} />
             <Route path="/subscribe" component={Subscribe} />

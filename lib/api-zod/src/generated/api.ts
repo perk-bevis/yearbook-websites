@@ -543,3 +543,214 @@ export const GetStatsResponse = zod.object({
 })
 
 
+/**
+ * @summary List available cohorts
+ */
+export const ListCohortsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "year": zod.number(),
+  "school_name": zod.string()
+})
+export const ListCohortsResponse = zod.array(ListCohortsResponseItem)
+
+
+/**
+ * @summary List available classes
+ */
+export const ListClassesQueryParams = zod.object({
+  "cohort_id": zod.coerce.number().optional()
+})
+
+export const ListClassesResponseItem = zod.object({
+  "id": zod.number(),
+  "cohort_id": zod.number(),
+  "name": zod.string(),
+  "cohort_name": zod.string().optional()
+})
+export const ListClassesResponse = zod.array(ListClassesResponseItem)
+
+
+/**
+ * @summary Search users visible to the current user
+ */
+export const searchUsersQueryQMax = 80;
+
+
+export const searchUsersQueryPageSizeMax = 50;
+
+
+
+export const SearchUsersQueryParams = zod.object({
+  "q": zod.coerce.string().max(searchUsersQueryQMax).optional(),
+  "cohort_id": zod.coerce.number().optional(),
+  "class_id": zod.coerce.number().optional(),
+  "page": zod.coerce.number().min(1).optional(),
+  "page_size": zod.coerce.number().min(1).max(searchUsersQueryPageSizeMax).optional()
+})
+
+export const SearchUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "clerk_user_id": zod.string(),
+  "full_name": zod.string().nullish(),
+  "nickname": zod.string().nullish(),
+  "photo_url": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "school_name": zod.string().nullish(),
+  "class_name": zod.string().nullish(),
+  "cohort_id": zod.number().nullish(),
+  "class_id": zod.number().nullish(),
+  "online": zod.boolean().optional(),
+  "last_seen_at": zod.string().nullish(),
+  "friend_status": zod.enum(['self', 'friends', 'outgoing', 'incoming', 'none']).optional(),
+  "request_id": zod.number().nullish(),
+  "mutual_count": zod.number().optional(),
+  "created_at": zod.string().nullish(),
+  "sender_id": zod.string().optional(),
+  "target_id": zod.string().optional()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "page_size": zod.number()
+})
+
+
+/**
+ * @summary List friends, requests, and suggestions
+ */
+export const GetFriendsOverviewResponse = zod.object({
+  "friends": zod.array(zod.object({
+  "clerk_user_id": zod.string(),
+  "full_name": zod.string().nullish(),
+  "nickname": zod.string().nullish(),
+  "photo_url": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "school_name": zod.string().nullish(),
+  "class_name": zod.string().nullish(),
+  "cohort_id": zod.number().nullish(),
+  "class_id": zod.number().nullish(),
+  "online": zod.boolean().optional(),
+  "last_seen_at": zod.string().nullish(),
+  "friend_status": zod.enum(['self', 'friends', 'outgoing', 'incoming', 'none']).optional(),
+  "request_id": zod.number().nullish(),
+  "mutual_count": zod.number().optional(),
+  "created_at": zod.string().nullish(),
+  "sender_id": zod.string().optional(),
+  "target_id": zod.string().optional()
+})),
+  "incoming": zod.array(zod.object({
+  "clerk_user_id": zod.string(),
+  "full_name": zod.string().nullish(),
+  "nickname": zod.string().nullish(),
+  "photo_url": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "school_name": zod.string().nullish(),
+  "class_name": zod.string().nullish(),
+  "cohort_id": zod.number().nullish(),
+  "class_id": zod.number().nullish(),
+  "online": zod.boolean().optional(),
+  "last_seen_at": zod.string().nullish(),
+  "friend_status": zod.enum(['self', 'friends', 'outgoing', 'incoming', 'none']).optional(),
+  "request_id": zod.number().nullish(),
+  "mutual_count": zod.number().optional(),
+  "created_at": zod.string().nullish(),
+  "sender_id": zod.string().optional(),
+  "target_id": zod.string().optional()
+})),
+  "outgoing": zod.array(zod.object({
+  "clerk_user_id": zod.string(),
+  "full_name": zod.string().nullish(),
+  "nickname": zod.string().nullish(),
+  "photo_url": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "school_name": zod.string().nullish(),
+  "class_name": zod.string().nullish(),
+  "cohort_id": zod.number().nullish(),
+  "class_id": zod.number().nullish(),
+  "online": zod.boolean().optional(),
+  "last_seen_at": zod.string().nullish(),
+  "friend_status": zod.enum(['self', 'friends', 'outgoing', 'incoming', 'none']).optional(),
+  "request_id": zod.number().nullish(),
+  "mutual_count": zod.number().optional(),
+  "created_at": zod.string().nullish(),
+  "sender_id": zod.string().optional(),
+  "target_id": zod.string().optional()
+})),
+  "suggestions": zod.array(zod.object({
+  "clerk_user_id": zod.string(),
+  "full_name": zod.string().nullish(),
+  "nickname": zod.string().nullish(),
+  "photo_url": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "school_name": zod.string().nullish(),
+  "class_name": zod.string().nullish(),
+  "cohort_id": zod.number().nullish(),
+  "class_id": zod.number().nullish(),
+  "online": zod.boolean().optional(),
+  "last_seen_at": zod.string().nullish(),
+  "friend_status": zod.enum(['self', 'friends', 'outgoing', 'incoming', 'none']).optional(),
+  "request_id": zod.number().nullish(),
+  "mutual_count": zod.number().optional(),
+  "created_at": zod.string().nullish(),
+  "sender_id": zod.string().optional(),
+  "target_id": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Send a friend request
+ */
+export const requestFriendshipBodyTargetIdMax = 255;
+
+
+
+export const RequestFriendshipBody = zod.object({
+  "target_id": zod.string().min(1).max(requestFriendshipBodyTargetIdMax)
+})
+
+export const RequestFriendshipResponse = zod.object({
+  "status": zod.enum(['friends', 'outgoing', 'incoming', 'none']),
+  "request_id": zod.number().nullish()
+})
+
+
+/**
+ * @summary Accept an incoming friend request
+ */
+export const AcceptFriendRequestParams = zod.object({
+  "request_id": zod.coerce.number()
+})
+
+export const AcceptFriendRequestResponse = zod.object({
+  "status": zod.enum(['friends', 'outgoing', 'incoming', 'none']),
+  "request_id": zod.number().nullish()
+})
+
+
+/**
+ * @summary Decline an incoming friend request
+ */
+export const DeclineFriendRequestParams = zod.object({
+  "request_id": zod.coerce.number()
+})
+
+export const DeclineFriendRequestResponse = zod.object({
+  "status": zod.enum(['friends', 'outgoing', 'incoming', 'none']),
+  "request_id": zod.number().nullish()
+})
+
+
+/**
+ * @summary Remove a friend or cancel a request
+ */
+export const RemoveFriendParams = zod.object({
+  "target_id": zod.coerce.string()
+})
+
+export const RemoveFriendResponse = zod.object({
+  "status": zod.enum(['friends', 'outgoing', 'incoming', 'none']),
+  "request_id": zod.number().nullish()
+})
+
+
