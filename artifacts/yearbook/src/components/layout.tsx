@@ -185,18 +185,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         'sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md',
         isMessagesPage && 'hidden md:block',
       )}>
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
+        <div className="mx-auto w-full max-w-[1536px] px-4 h-16 flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-display text-xl font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               9A
             </div>
-            <span className="font-display text-2xl tracking-tight hidden sm:block text-foreground">
+            <span className="font-display text-2xl tracking-tight hidden 2xl:block whitespace-nowrap text-foreground">
               Kỷ Yếu Vũ Lăng
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="site-desktop-nav hidden md:flex items-center gap-1">
+          <nav className="site-desktop-nav hidden lg:flex items-center gap-1 min-w-0">
             {NAV_LINKS.map((link) => {
               const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
               const Icon = link.icon;
@@ -211,15 +211,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                   )}
                 >
-                  <Icon className="w-4 h-4" />
-                  {link.label}
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="hidden xl:inline">{link.label}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Auth area */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <MessagesIcon />
             <Show when="signed-out">
               <Link href="/sign-in">
@@ -234,7 +234,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu toggle */}
             <button
-              className="site-mobile-menu md:hidden p-2 rounded-full hover:bg-muted transition-colors"
+              className="site-mobile-menu lg:hidden p-2 rounded-full hover:bg-muted transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -244,7 +244,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="site-mobile-menu-panel md:hidden border-t bg-background/95 backdrop-blur-md">
+          <div className="site-mobile-menu-panel lg:hidden border-t bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
               {NAV_LINKS.map((link) => {
                 const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
