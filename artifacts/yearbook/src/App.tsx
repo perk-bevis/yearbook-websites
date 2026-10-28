@@ -175,7 +175,7 @@ function Router() {
             <Route path="/tin-nhan/:partnerId" component={Messages} />
             <Route path="/tin-nhan" component={Messages} />
             {/* Admin at a hidden path — not linked in nav */}
-            <Route path="/quan-tri-admin" component={Admin} />
+            <Route path="/admins" component={Admin} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
