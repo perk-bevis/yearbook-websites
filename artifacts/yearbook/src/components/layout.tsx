@@ -212,7 +212,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className="hidden xl:inline">{link.label}</span>
+                  <span className="hidden 2xl:inline">{link.label}</span>
                 </Link>
               );
             })}
@@ -224,7 +224,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Show when="signed-out">
               <Link href="/sign-in">
                 <button className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">
-                  <LogIn className="w-3.5 h-3.5" />Đăng nhập
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span className="hidden 2xl:inline">Đăng nhập</span>
                 </button>
               </Link>
             </Show>
