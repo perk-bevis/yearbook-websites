@@ -3,7 +3,8 @@
 An online yearbook website for keeping photos, memories, and messages from teachers and classmates.
  
 🌐 **Live demo:** https://yearbook-websites.vercel.app
- 
+🌐 **Api demo:** https://yearbook-websites-4zh4.vercel.app/api/healthz
+
 ---
  
 ## ✨ Features
