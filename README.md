@@ -19,7 +19,7 @@ An online yearbook website for keeping photos, memories, and messages from teach
 - Member-to-member messaging
 - Sign in / sign out
 - Responsive layout for desktop, tablet, and mobile
----
+--
  
 ## 📄 Pages
  
