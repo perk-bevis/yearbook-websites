@@ -566,11 +566,373 @@ def create_group(body: CreateGroupRequest, user_id: str = Depends(require_user))
     }
 
 
+def _group_membership(cur, group_id: int, user_id: str):
+    cur.execute(
+        """
+        SELECT g.owner_id, g.privacy, g.is_default, gm.role, gm.status
+        FROM group_conversations g
+        LEFT JOIN group_members gm ON gm.group_id = g.id AND gm.user_id = %s
+        WHERE g.id = %s
+        """,
+        (user_id, group_id),
+    )
+    return cur.fetchone()
+
+
+def _require_group_admin(cur, group_id: int, user_id: str):
+    membership = _group_membership(cur, group_id, user_id)
+    if not membership:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+    owner_id, _, _, role, status = membership
+    if status != "joined" or (owner_id != user_id and role not in ("owner", "admin")):
+        raise HTTPException(status_code=403, detail="Bạn không có quyền quản lý nhóm")
+    return membership
+
+
+@router.get("/groups/discover")
+def discover_groups(
+    q: str = Query(default="", max_length=80),
+    cohort_id: Optional[int] = Query(default=None, ge=1),
+    class_id: Optional[int] = Query(default=None, ge=1),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    user_id: str = Depends(require_user),
+):
+    term = q.strip()
+    pattern = f"%{term}%"
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM group_conversations g
+            WHERE g.privacy = 'public'
+              AND (%s = '' OR LOWER(g.name) LIKE LOWER(%s) OR LOWER(g.description) LIKE LOWER(%s))
+              AND (%s IS NULL OR g.cohort_id = %s)
+              AND (%s IS NULL OR g.class_id = %s)
+            """,
+            (term, pattern, pattern, cohort_id, cohort_id, class_id, class_id),
+        )
+        total = cur.fetchone()[0]
+        cur.execute(
+            """
+            SELECT g.id, g.name, g.description, g.cohort_id, g.class_id,
+                   g.owner_id, g.privacy, g.is_default, g.created_at,
+                   COALESCE(m.member_count, 0) AS member_count,
+                   mine.status AS my_status, mine.role AS my_role,
+                   c.name AS cohort_name, cl.name AS class_name
+            FROM group_conversations g
+            LEFT JOIN cohorts c ON c.id = g.cohort_id
+            LEFT JOIN classes cl ON cl.id = g.class_id
+            LEFT JOIN group_members mine ON mine.group_id = g.id AND mine.user_id = %s
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS member_count
+                FROM group_members gm WHERE gm.group_id = g.id AND gm.status = 'joined'
+            ) m ON TRUE
+            WHERE g.privacy = 'public'
+              AND (%s = '' OR LOWER(g.name) LIKE LOWER(%s) OR LOWER(g.description) LIKE LOWER(%s))
+              AND (%s IS NULL OR g.cohort_id = %s)
+              AND (%s IS NULL OR g.class_id = %s)
+            ORDER BY g.is_default DESC, g.created_at DESC, g.name
+            LIMIT %s OFFSET %s
+            """,
+            (
+                user_id, term, pattern, pattern, cohort_id, cohort_id, class_id, class_id,
+                page_size, (page - 1) * page_size,
+            ),
+        )
+        return {"items": rows_to_list(cur, cur.fetchall()), "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/groups/{group_id}")
+def get_group(group_id: int, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        membership = _group_membership(cur, group_id, user_id)
+        if not membership:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        owner_id, privacy, _, _, member_status = membership
+        if privacy == "private" and member_status not in ("joined", "invited", "requested") and owner_id != user_id:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        cur.execute(
+            """
+            SELECT g.id, g.name, g.description, g.cohort_id, g.class_id,
+                   g.owner_id, g.privacy, g.is_default, g.created_at,
+                   c.name AS cohort_name, cl.name AS class_name,
+                   COALESCE((SELECT COUNT(*) FROM group_members gm
+                             WHERE gm.group_id = g.id AND gm.status = 'joined'), 0) AS member_count,
+                   mine.role AS my_role, mine.status AS my_status
+            FROM group_conversations g
+            LEFT JOIN cohorts c ON c.id = g.cohort_id
+            LEFT JOIN classes cl ON cl.id = g.class_id
+            LEFT JOIN group_members mine ON mine.group_id = g.id AND mine.user_id = %s
+            WHERE g.id = %s
+            """,
+            (user_id, group_id),
+        )
+        group = row_to_dict(cur, cur.fetchone())
+        cur.execute(
+            """
+            SELECT au.clerk_user_id, au.full_name, au.nickname, au.photo_url,
+                   gm.role, gm.status, gm.joined_at
+            FROM group_members gm
+            LEFT JOIN app_users au ON au.clerk_user_id = gm.user_id
+            WHERE gm.group_id = %s AND gm.status = 'joined'
+            ORDER BY CASE gm.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, gm.joined_at
+            """,
+            (group_id,),
+        )
+        group["members"] = rows_to_list(cur, cur.fetchall())
+        group["pending_members"] = []
+        if group.get("owner_id") == user_id or group.get("my_role") in ("owner", "admin"):
+            cur.execute(
+                """
+                SELECT au.clerk_user_id, au.full_name, au.nickname, au.photo_url,
+                       gm.role, gm.status, gm.joined_at
+                FROM group_members gm
+                LEFT JOIN app_users au ON au.clerk_user_id = gm.user_id
+                WHERE gm.group_id = %s AND gm.status IN ('requested', 'invited')
+                ORDER BY gm.joined_at NULLS FIRST
+                """,
+                (group_id,),
+            )
+            group["pending_members"] = rows_to_list(cur, cur.fetchall())
+        return group
+
+
+@router.post("/groups/{group_id}/join")
+def join_group(group_id: int, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT privacy, name FROM group_conversations WHERE id = %s", (group_id,))
+        group = cur.fetchone()
+        if not group:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        privacy, group_name = group
+        cur.execute("SELECT status FROM group_members WHERE group_id = %s AND user_id = %s", (group_id, user_id))
+        existing = cur.fetchone()
+        if existing and existing[0] == "joined":
+            return {"status": "joined"}
+        next_status = "joined" if privacy == "public" or (existing and existing[0] == "invited") else "requested"
+        cur.execute(
+            """
+            INSERT INTO group_members (group_id, user_id, role, status)
+            VALUES (%s, %s, 'member', %s)
+            ON CONFLICT (group_id, user_id)
+            DO UPDATE SET status = EXCLUDED.status,
+                          joined_at = CASE WHEN EXCLUDED.status = 'joined' THEN NOW() ELSE group_members.joined_at END
+            """,
+            (group_id, user_id, next_status),
+        )
+        if next_status == "requested":
+            cur.execute(
+                "SELECT user_id FROM group_members WHERE group_id = %s AND role IN ('owner', 'admin') AND status = 'joined'",
+                (group_id,),
+            )
+            for (admin_id,) in cur.fetchall():
+                if admin_id != user_id:
+                    _notify(cur, admin_id, "group_join_request", f"Có yêu cầu tham gia nhóm “{group_name}”.", f"/groups/{group_id}")
+        return {"status": next_status}
+
+
+@router.get("/groups/{group_id}/posts")
+def list_group_posts(
+    group_id: int,
+    limit: int = Query(default=30, ge=1, le=100),
+    user_id: str = Depends(require_user),
+):
+    with get_db() as conn:
+        cur = conn.cursor()
+        membership = _group_membership(cur, group_id, user_id)
+        if not membership:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        owner_id, privacy, _, _, member_status = membership
+        if privacy == "private" and member_status != "joined" and owner_id != user_id:
+            raise HTTPException(status_code=403, detail="Bạn chưa tham gia nhóm này")
+        cur.execute(
+            """
+            SELECT p.id, p.group_id, p.author_id, p.content, p.created_at,
+                   au.full_name, au.nickname, au.photo_url
+            FROM group_posts p
+            LEFT JOIN app_users au ON au.clerk_user_id = p.author_id
+            WHERE p.group_id = %s
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT %s
+            """,
+            (group_id, limit),
+        )
+        return rows_to_list(cur, cur.fetchall())
+
+
+@router.post("/groups/{group_id}/posts", status_code=201)
+def create_group_post(group_id: int, body: GroupPostRequest, user_id: str = Depends(require_user)):
+    content = body.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Bài viết không được để trống")
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT 1 FROM group_members WHERE group_id = %s AND user_id = %s AND status = 'joined'",
+            (group_id, user_id),
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=403, detail="Chỉ thành viên đã tham gia mới được đăng bài")
+        cur.execute(
+            "INSERT INTO group_posts (group_id, author_id, content) VALUES (%s, %s, %s) RETURNING *",
+            (group_id, user_id, content),
+        )
+        return row_to_dict(cur, cur.fetchone())
+
+
+@router.post("/groups/{group_id}/members/{member_id}/invite")
+def invite_group_member(group_id: int, member_id: str, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        _require_group_admin(cur, group_id, user_id)
+        if _is_blocked(cur, user_id, member_id):
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        cur.execute("SELECT 1 FROM app_users WHERE clerk_user_id = %s", (member_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        cur.execute("SELECT name FROM group_conversations WHERE id = %s", (group_id,))
+        group_name = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO group_members (group_id, user_id, role, status)
+            VALUES (%s, %s, 'member', 'invited')
+            ON CONFLICT (group_id, user_id) DO UPDATE SET
+                status = CASE WHEN group_members.status = 'joined' THEN 'joined' ELSE 'invited' END
+            RETURNING status
+            """,
+            (group_id, member_id),
+        )
+        status = cur.fetchone()[0]
+        _notify(cur, member_id, "group_invite", f"Bạn được mời tham gia nhóm “{group_name}”.", f"/groups/{group_id}")
+        return {"status": status}
+
+
+@router.post("/groups/{group_id}/members/{member_id}/approve")
+def approve_group_member(group_id: int, member_id: str, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        _require_group_admin(cur, group_id, user_id)
+        cur.execute(
+            """
+            UPDATE group_members SET status = 'joined', joined_at = NOW()
+            WHERE group_id = %s AND user_id = %s AND status IN ('requested', 'invited')
+            RETURNING user_id
+            """,
+            (group_id, member_id),
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy lời mời đang chờ")
+        _notify(cur, member_id, "group_join_approved", "Yêu cầu tham gia nhóm của bạn đã được chấp nhận.", f"/groups/{group_id}")
+        return {"status": "joined"}
+
+
+@router.delete("/groups/{group_id}/members/{member_id}")
+def remove_group_member(group_id: int, member_id: str, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        membership = _group_membership(cur, group_id, user_id)
+        if not membership:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        owner_id, _, _, actor_role, actor_status = membership
+        if actor_status != "joined":
+            raise HTTPException(status_code=403, detail="Bạn không có quyền quản lý nhóm")
+        cur.execute("SELECT role, status FROM group_members WHERE group_id = %s AND user_id = %s", (group_id, member_id))
+        target = cur.fetchone()
+        if not target:
+            raise HTTPException(status_code=404, detail="Không tìm thấy thành viên")
+        target_role, _ = target
+        if member_id == user_id:
+            if owner_id == user_id or actor_role == "owner":
+                raise HTTPException(status_code=400, detail="Chủ nhóm không thể rời nhóm; hãy xóa nhóm hoặc chuyển quyền sở hữu.")
+        elif owner_id != user_id and actor_role != "owner":
+            if actor_role != "admin" or target_role != "member":
+                raise HTTPException(status_code=403, detail="Bạn không có quyền xóa thành viên này")
+        elif target_role == "owner":
+            raise HTTPException(status_code=400, detail="Không thể xóa chủ nhóm")
+        cur.execute("DELETE FROM group_members WHERE group_id = %s AND user_id = %s", (group_id, member_id))
+        return {"status": "removed"}
+
+
+@router.patch("/groups/{group_id}")
+def update_group(group_id: int, body: GroupUpdateRequest, user_id: str = Depends(require_user)):
+    values = body.model_dump(exclude_unset=True)
+    if "privacy" in values and values["privacy"] not in ("public", "private"):
+        raise HTTPException(status_code=400, detail="Chế độ riêng tư không hợp lệ")
+    with get_db() as conn:
+        cur = conn.cursor()
+        membership = _require_group_admin(cur, group_id, user_id)
+        owner_id, _, is_default, _, _ = membership
+        if is_default:
+            raise HTTPException(status_code=403, detail="Không thể chỉnh sửa nhóm mặc định của lớp/khóa")
+        if values.get("privacy") is not None and owner_id != user_id:
+            raise HTTPException(status_code=403, detail="Chỉ chủ nhóm mới có thể đổi chế độ riêng tư")
+        if not values:
+            cur.execute("SELECT id, name, description, privacy FROM group_conversations WHERE id = %s", (group_id,))
+            return row_to_dict(cur, cur.fetchone())
+        columns = {"name": "name", "description": "description", "privacy": "privacy"}
+        assignments, params = [], []
+        for key, value in values.items():
+            if key in columns and value is not None:
+                assignments.append(f"{columns[key]} = %s")
+                params.append(value.strip() if isinstance(value, str) else value)
+        if not assignments:
+            raise HTTPException(status_code=400, detail="Không có thông tin hợp lệ để cập nhật")
+        params.append(group_id)
+        cur.execute(
+            f"UPDATE group_conversations SET {', '.join(assignments)} WHERE id = %s RETURNING id, name, description, privacy",
+            params,
+        )
+        return row_to_dict(cur, cur.fetchone())
+
+
+@router.patch("/groups/{group_id}/members/{member_id}/role")
+def update_group_role(group_id: int, member_id: str, body: GroupRoleRequest, user_id: str = Depends(require_user)):
+    if body.role not in ("admin", "member"):
+        raise HTTPException(status_code=400, detail="Vai trò chỉ có thể là admin hoặc member")
+    with get_db() as conn:
+        cur = conn.cursor()
+        membership = _group_membership(cur, group_id, user_id)
+        if not membership:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm")
+        owner_id, _, is_default, _, status = membership
+        if status != "joined" or owner_id != user_id or is_default:
+            raise HTTPException(status_code=403, detail="Chỉ chủ nhóm được quản lý vai trò quản trị viên")
+        cur.execute(
+            """
+            UPDATE group_members SET role = %s
+            WHERE group_id = %s AND user_id = %s AND status = 'joined' AND role <> 'owner'
+            RETURNING user_id, role
+            """,
+            (body.role, group_id, member_id),
+        )
+        updated = cur.fetchone()
+        if not updated:
+            raise HTTPException(status_code=404, detail="Không tìm thấy thành viên")
+        return {"status": "updated", "user_id": updated[0], "role": updated[1]}
+
+
+@router.delete("/groups/{group_id}")
+def delete_group(group_id: int, user_id: str = Depends(require_user)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM group_conversations WHERE id = %s AND owner_id = %s AND is_default = FALSE RETURNING id",
+            (group_id, user_id),
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhóm hoặc bạn không phải chủ nhóm")
+    return {"status": "deleted"}
+
+
 @router.get("/groups/{group_id}/messages")
 def list_group_messages(group_id: int, user_id: str = Depends(require_user)):
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT 1 FROM group_members WHERE group_id = %s AND user_id = %s", (group_id, user_id))
+        cur.execute("SELECT 1 FROM group_members WHERE group_id = %s AND user_id = %s AND status = 'joined'", (group_id, user_id))
         if not cur.fetchone():
             raise HTTPException(status_code=403, detail="Bạn không ở trong nhóm này")
         cur.execute(
@@ -595,7 +957,7 @@ def send_group_message(group_id: int, body: GroupMessageRequest, user_id: str = 
         raise HTTPException(status_code=400, detail="Tin nhắn không được trống")
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT 1 FROM group_members WHERE group_id = %s AND user_id = %s", (group_id, user_id))
+        cur.execute("SELECT 1 FROM group_members WHERE group_id = %s AND user_id = %s AND status = 'joined'", (group_id, user_id))
         if not cur.fetchone():
             raise HTTPException(status_code=403, detail="Bạn không ở trong nhóm này")
         cur.execute(

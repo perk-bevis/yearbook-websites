@@ -697,6 +697,304 @@ paths:
               schema:
                 $ref: "#/components/schemas/FriendActionResult"
 
+  /groups:
+    get:
+      operationId: listGroups
+      tags: [groups]
+      summary: List groups the current user has joined
+      responses:
+        "200":
+          description: Joined groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+    post:
+      operationId: createGroup
+      tags: [groups]
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreationInput"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/discover:
+    get:
+      operationId: discoverGroups
+      tags: [groups]
+      summary: Discover public groups
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cohort_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: class_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Paginated public groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSearchResult"
+
+  /groups/{group_id}:
+    get:
+      operationId: getGroup
+      tags: [groups]
+      summary: Get group details and members
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupDetail"
+    patch:
+      operationId: updateGroup
+      tags: [groups]
+      summary: Update a group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdateBody"
+      responses:
+        "200":
+          description: Updated group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+    delete:
+      operationId: deleteGroup
+      tags: [groups]
+      summary: Delete a group as its owner
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
+  /groups/{group_id}/join:
+    post:
+      operationId: joinGroup
+      tags: [groups]
+      summary: Join a public group or request private access
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Membership result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
+  /groups/{group_id}/posts:
+    get:
+      operationId: listGroupPosts
+      tags: [groups]
+      summary: List group posts newest first
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupPost"
+    post:
+      operationId: createGroupPost
+      tags: [groups]
+      summary: Add a text post to a group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupPostBody"
+      responses:
+        "201":
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupPost"
+
+  /groups/{group_id}/members/{member_id}/invite:
+    post:
+      operationId: inviteGroupMember
+      tags: [groups]
+      summary: Invite a user to a group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invitation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
+  /groups/{group_id}/members/{member_id}/approve:
+    post:
+      operationId: approveGroupMember
+      tags: [groups]
+      summary: Approve a pending group member
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Membership approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
+  /groups/{group_id}/members/{member_id}:
+    delete:
+      operationId: removeGroupMember
+      tags: [groups]
+      summary: Remove or leave a group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Membership removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
+  /groups/{group_id}/members/{member_id}/role:
+    patch:
+      operationId: updateGroupRole
+      tags: [groups]
+      summary: Change a group member role
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRoleBody"
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupActionResult"
+
 components:
   schemas:
     HealthStatus:
@@ -826,6 +1124,183 @@ components:
           enum: [friends, outgoing, incoming, none]
         request_id:
           type: ["integer", "null"]
+      required: [status]
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        cohort_id:
+          type: ["integer", "null"]
+        class_id:
+          type: ["integer", "null"]
+        owner_id:
+          type: ["string", "null"]
+        privacy:
+          type: string
+          enum: [public, private]
+        is_default:
+          type: boolean
+        created_at:
+          type: ["string", "null"]
+        member_count:
+          type: integer
+        my_status:
+          type: ["string", "null"]
+        my_role:
+          type: ["string", "null"]
+        cohort_name:
+          type: ["string", "null"]
+        class_name:
+          type: ["string", "null"]
+        last_message:
+          type: ["string", "null"]
+        last_at:
+          type: ["string", "null"]
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMember"
+        pending_members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMember"
+      required: [id, name]
+
+    GroupMember:
+      type: object
+      properties:
+        clerk_user_id:
+          type: ["string", "null"]
+        user_id:
+          type: ["string", "null"]
+        full_name:
+          type: ["string", "null"]
+        nickname:
+          type: ["string", "null"]
+        photo_url:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        joined_at:
+          type: ["string", "null"]
+      required: []
+
+    GroupPost:
+      type: object
+      properties:
+        id:
+          type: integer
+        group_id:
+          type: integer
+        author_id:
+          type: string
+        content:
+          type: string
+        created_at:
+          type: string
+        full_name:
+          type: ["string", "null"]
+        nickname:
+          type: ["string", "null"]
+        photo_url:
+          type: ["string", "null"]
+      required: [id, group_id, author_id, content, created_at]
+
+    GroupSearchResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+      required: [items, total, page, page_size]
+
+    GroupDetail:
+      allOf:
+        - $ref: "#/components/schemas/Group"
+
+    GroupCreationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        member_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+        description:
+          type: string
+          maxLength: 500
+        cohort_id:
+          type: integer
+        class_id:
+          type: integer
+        privacy:
+          type: string
+          enum: [public, private]
+      required: [name]
+
+    GroupUpdateBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        privacy:
+          type: string
+          enum: [public, private]
+
+    GroupPostBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+      required: [content]
+
+    GroupRoleBody:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, member]
+      required: [role]
+
+    GroupActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+        user_id:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        id:
+          type: integer
       required: [status]
 
     # ── Student ──

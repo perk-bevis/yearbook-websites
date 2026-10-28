@@ -7,6 +7,66 @@ from auth import require_user, get_optional_user
 
 router = APIRouter()
 
+
+def _sync_school_class_groups(cur, clerk_user_id: str, school_name: Optional[str], class_name: Optional[str]):
+    school = (school_name or "").strip()
+    klass = (class_name or "").strip()
+    cohort_id = None
+    class_id = None
+    if school:
+        if klass:
+            cur.execute(
+                """
+                SELECT c.id, cl.id
+                FROM cohorts c
+                JOIN classes cl ON cl.cohort_id = c.id
+                WHERE LOWER(BTRIM(c.school_name)) = LOWER(%s)
+                  AND LOWER(cl.name) = LOWER(REGEXP_REPLACE(BTRIM(%s), '^Lớp[[:space:]]*', '', 'i'))
+                ORDER BY c.year DESC
+                LIMIT 2
+                """,
+                (school, klass),
+            )
+            matches = cur.fetchall()
+            if len(matches) == 1:
+                cohort_id, class_id = matches[0]
+        if cohort_id is None:
+            cur.execute(
+                "SELECT id FROM cohorts WHERE LOWER(BTRIM(school_name)) = LOWER(%s) ORDER BY year DESC LIMIT 2",
+                (school,),
+            )
+            cohorts = cur.fetchall()
+            if len(cohorts) == 1:
+                cohort_id = cohorts[0][0]
+
+    cur.execute(
+        "UPDATE app_users SET cohort_id = %s, class_id = %s WHERE clerk_user_id = %s",
+        (cohort_id, class_id, clerk_user_id),
+    )
+    if cohort_id:
+        cur.execute(
+            """
+            INSERT INTO group_members (group_id, user_id, role, status)
+            SELECT id, %s, 'member', 'joined'
+            FROM group_conversations
+            WHERE is_default = TRUE AND cohort_id = %s AND class_id IS NULL
+            ON CONFLICT (group_id, user_id) DO UPDATE SET status = 'joined'
+            """,
+            (clerk_user_id, cohort_id),
+        )
+    if class_id:
+        cur.execute(
+            """
+            INSERT INTO group_members (group_id, user_id, role, status)
+            SELECT id, %s, 'member', 'joined'
+            FROM group_conversations
+            WHERE is_default = TRUE AND class_id = %s
+            ON CONFLICT (group_id, user_id) DO UPDATE SET status = 'joined'
+            """,
+            (clerk_user_id, class_id),
+        )
+
+
 # ── Admin password check ────────────────────────────────────────────────────
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin@kyYeu2024")
 
@@ -40,6 +100,8 @@ class UserSyncRequest(BaseModel):
 def sync_user(body: UserSyncRequest, clerk_user_id: str = Depends(require_user)):
     with get_db() as conn:
         cur = conn.cursor()
+        cur.execute("SELECT 1 FROM app_users WHERE clerk_user_id = %s", (clerk_user_id,))
+        is_new_user = cur.fetchone() is None
         cur.execute("""
             INSERT INTO app_users (clerk_user_id, email, full_name)
             VALUES (%s, %s, %s)
@@ -49,7 +111,12 @@ def sync_user(body: UserSyncRequest, clerk_user_id: str = Depends(require_user))
                   updated_at = NOW()
             RETURNING *
         """, (clerk_user_id, body.email, body.full_name))
-        return row_to_dict(cur, cur.fetchone())
+        user = row_to_dict(cur, cur.fetchone())
+        if is_new_user:
+            _sync_school_class_groups(cur, clerk_user_id, user.get("school_name"), user.get("class_name"))
+            cur.execute("SELECT * FROM app_users WHERE clerk_user_id = %s", (clerk_user_id,))
+            user = row_to_dict(cur, cur.fetchone())
+        return user
 
 @router.get("/auth/me")
 def get_me(clerk_user_id: str = Depends(require_user)):
@@ -119,6 +186,10 @@ def update_me(body: UserProfileUpdate, clerk_user_id: str = Depends(require_user
         vals.append(clerk_user_id)
         cur.execute(f"UPDATE app_users SET {', '.join(fields)} WHERE clerk_user_id = %s RETURNING *", vals)
         user = row_to_dict(cur, cur.fetchone())
+        if user and ("school_name" in body.model_fields_set or "class_name" in body.model_fields_set):
+            _sync_school_class_groups(cur, clerk_user_id, user.get("school_name"), user.get("class_name"))
+            cur.execute("SELECT * FROM app_users WHERE clerk_user_id = %s", (clerk_user_id,))
+            user = row_to_dict(cur, cur.fetchone())
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
