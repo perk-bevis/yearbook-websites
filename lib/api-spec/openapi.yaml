@@ -1297,8 +1297,6 @@ components:
           type: string
         role:
           type: string
-        status:
-          type: string
         id:
           type: integer
       required: [status]
