@@ -38,9 +38,9 @@ export default function Home() {
   const { data: memories, isLoading: memoriesLoading } = useListMemories();
   const { data: events, isLoading: eventsLoading } = useListEvents();
 
-  const featuredStudents = students?.slice(0, 4) || [];
-  const latestMemories = memories?.slice(0, 3) || [];
-  const latestEvents = events?.slice(0, 3) || [];
+  const featuredStudents = Array.isArray(students) ? students.slice(0, 4) : [];
+  const latestMemories = Array.isArray(memories) ? memories.slice(0, 3) : [];
+  const latestEvents = Array.isArray(events) ? events.slice(0, 3) : [];
 
   return (
     <div className="flex-1">
