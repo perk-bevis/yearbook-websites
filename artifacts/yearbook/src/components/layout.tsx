@@ -212,7 +212,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className="hidden 2xl:inline">{link.label}</span>
+                  <span className="hidden xl:inline">{link.label}</span>
                 </Link>
               );
             })}
