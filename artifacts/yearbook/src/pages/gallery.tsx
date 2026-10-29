@@ -188,13 +188,13 @@ export default function Gallery() {
                 className="break-inside-avoid"
               >
                 <div 
-                  className="group relative rounded-2xl overflow-hidden cursor-pointer bg-card border"
+                  className="group relative block aspect-square w-full overflow-hidden rounded-2xl border border-border/50 bg-card"
                   onClick={() => setLightboxPhoto({ url: photo.url, caption: photo.caption })}
                 >
                   <img 
                     src={photo.url} 
                     alt={photo.caption || "Hình ảnh"} 
-                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700" 
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
