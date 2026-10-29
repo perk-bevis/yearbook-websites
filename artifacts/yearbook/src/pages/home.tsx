@@ -237,8 +237,7 @@ export default function Home() {
       <div className="mx-auto max-w-[1400px] space-y-7 px-4 py-5 sm:px-6 sm:py-7">
         {/* Banner chào mừng */}
         <section className="relative min-h-[190px] overflow-hidden rounded-2xl border border-border/50 bg-muted sm:min-h-[230px]">
-          <img
-            src="/attached_assets/generated_images/hero-classroom.jpg"
+          <img src="/banner.jpeg"
             alt="Những kỷ niệm thời học sinh"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
