@@ -46,48 +46,89 @@ export default function Gallery() {
       .then((profile) => setRole(profile?.role || null));
   }, [isLoaded, user]);
 
-  const uploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn một tệp hình ảnh.");
-      return;
+  const uploadPhoto = async (
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+
+  if (!file) return;
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    toast.error("Chỉ chấp nhận ảnh JPEG, PNG, GIF hoặc WebP.");
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    toast.error("Ảnh không được vượt quá 10 MB.");
+    return;
+  }
+
+  setUploading(true);
+
+  try {
+    const imageData = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Không thể đọc ảnh."));
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Lỗi đọc tệp ảnh."));
+      reader.readAsDataURL(file);
+    });
+
+    const response = await fetch(`${BASE}api/gallery/base64`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_data: imageData,
+        caption: caption.trim() || null,
+        category,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.detail || "Không thể tải ảnh lên.");
     }
-    if (file.size > 12 * 1024 * 1024) {
-      toast.error("Ảnh không được vượt quá 12MB.");
-      return;
-    }
-    setUploading(true);
-    try {
-      const urlResponse = await fetch(`${BASE}api/storage/uploads/request-url`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!urlResponse.ok) throw new Error((await urlResponse.json()).detail || "Không thể chuẩn bị tải ảnh");
-      const { uploadURL, objectPath } = await urlResponse.json();
-      const uploadResponse = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadResponse.ok) throw new Error("Không thể tải ảnh lên kho lưu trữ");
-      const saveResponse = await fetch(`${BASE}api/gallery`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: objectPath, caption: caption.trim() || null, category }),
-      });
-      if (!saveResponse.ok) throw new Error((await saveResponse.json()).detail || "Không thể lưu ảnh vào album");
-      setCaption("");
-      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
-      toast.success("Đã thêm ảnh vào album kỷ niệm.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể thêm ảnh.");
-    } finally {
-      setUploading(false);
-    }
-  };
+
+    setCaption("");
+
+    await queryClient.invalidateQueries({
+      queryKey: ["gallery", activeCategory],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getListPhotosQueryKey(),
+    });
+
+    toast.success("Đã thêm ảnh vào album kỷ niệm.");
+  } catch (error) {
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Không thể thêm ảnh."
+    );
+  } finally {
+    setUploading(false);
+  }
+};
 
   return (
     <div className="container mx-auto px-4 py-12">
