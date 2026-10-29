@@ -7,7 +7,7 @@ from fastapi import HTTPException, Cookie, Header, Depends
 from typing import Optional
 
 CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY", "")
-JWKS_URL = "https://api.clerk.com/v1/jwks"
+JWKS_URL = "https://prime-pup-5449.clerk.accounts.dev/.well-known/jwks.json"
 
 _jwks_keys: dict = {}
 
