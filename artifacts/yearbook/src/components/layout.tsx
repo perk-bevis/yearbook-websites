@@ -22,6 +22,7 @@ import {
   Home,
   ChevronDown,
   Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, Show } from '@clerk/react';
@@ -36,6 +37,7 @@ const NAV_MAIN = [
   { href: '/yearbooks/mine', label: 'Kỷ yếu của tôi', icon: BookOpen },
   { href: '/ban-be', label: 'Bạn bè', icon: UsersRound },
   { href: '/tin-nhan', label: 'Tin nhắn', icon: MessageCircle },
+  { href: '/quy-lop', label: 'Quỹ lớp', icon: Wallet },
 ];
 
 const NAV_DISCOVER = [
