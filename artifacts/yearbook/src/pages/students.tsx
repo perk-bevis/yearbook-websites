@@ -1,143 +1,356 @@
+
 import { useListStudents, useListFrames } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, UserCircle2 } from "lucide-react";
+import {
+  Search,
+  UserCircle2,
+  SlidersHorizontal,
+  Crown,
+  X,
+  Users,
+} from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarGradient } from "@/components/ui/avatar-gradient";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+type RoleFilter = "all" | "monitor" | "vice_monitor" | "member";
 
 export default function Students() {
   const { data: students, isLoading } = useListStudents();
   const { data: frames } = useListFrames();
+
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const safeStudents = Array.isArray(students) ? students : [];
   const safeFrames = Array.isArray(frames) ? frames : [];
 
-  const filteredStudents = safeStudents.filter(s => {
-    const name = s?.name || "";
-    const nickname = s?.nickname || "";
-    return (
-      name.toLowerCase().includes(search.toLowerCase()) || 
-      nickname.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const filteredStudents = useMemo(() => {
+    const keyword = search.trim().toLocaleLowerCase("vi");
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "monitor": return <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none">Lớp trưởng</Badge>;
-      case "vice_monitor": return <Badge className="bg-secondary/40 text-secondary-foreground hover:bg-secondary/50 border-none">Lớp phó</Badge>;
-      default: return null;
-    }
-  };
+    return safeStudents.filter((student) => {
+      const name = student?.name || "";
+      const nickname = student?.nickname || "";
+
+      const matchesSearch =
+        name.toLocaleLowerCase("vi").includes(keyword) ||
+        nickname.toLocaleLowerCase("vi").includes(keyword);
+
+      const matchesRole =
+        roleFilter === "all" ||
+        (roleFilter === "monitor" && student.role === "monitor") ||
+        (roleFilter === "vice_monitor" &&
+          student.role === "vice_monitor") ||
+        (roleFilter === "member" &&
+          student.role !== "monitor" &&
+          student.role !== "vice_monitor");
+
+      return matchesSearch && matchesRole;
+    });
+  }, [safeStudents, search, roleFilter]);
 
   const getStudentFrame = (frameId?: number | null) => {
-    if (!frameId || safeFrames.length === 0) return null;
-    return safeFrames.find(f => f.id === frameId);
+    if (!frameId) return null;
+    return safeFrames.find((frame) => frame.id === frameId);
   };
 
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12 gap-6">
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-display font-bold mb-4"
-          >
-            Tập thể 9A
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-muted-foreground text-lg max-w-xl"
-          >
-            Gặp lại những gương mặt thân thương đã cùng nhau đi qua những năm tháng rực rỡ nhất của tuổi học trò.
-          </motion.p>
-        </div>
-        
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative w-full md:w-72"
-        >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input 
-            type="search" 
-            placeholder="Tìm kiếm bạn bè..." 
-            className="pl-10 h-12 rounded-full bg-card"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </motion.div>
-      </div>
+  const getRoleLabel = (role?: string | null) => {
+    if (role === "monitor") return "Lớp trưởng";
+    if (role === "vice_monitor") return "Lớp phó";
+    return "Thành viên";
+  };
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {isLoading ? (
-          Array(10).fill(0).map((_, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <Skeleton className="w-32 h-32 rounded-full mb-4" />
-              <Skeleton className="h-6 w-24 mb-2" />
-              <Skeleton className="h-4 w-16" />
+  const roleOptions: { value: RoleFilter; label: string }[] = [
+    { value: "all", label: "Tất cả thành viên" },
+    { value: "monitor", label: "Lớp trưởng" },
+    { value: "vice_monitor", label: "Lớp phó" },
+    { value: "member", label: "Thành viên" },
+  ];
+
+  return (
+    <div className="min-h-full bg-[#faf8f5]">
+      <div className="mx-auto max-w-[1180px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+        {/* Tiêu đề */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mb-5"
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fce9e4] text-[#d65d50]">
+              <Users className="h-[18px] w-[18px]" />
             </div>
-          ))
-        ) : filteredStudents.length === 0 ? (
-          <div className="col-span-full py-20 text-center flex flex-col items-center">
-            <UserCircle2 className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-xl font-bold mb-2">Không tìm thấy bạn học nào</h3>
-            <p className="text-muted-foreground">Thử tìm với một tên khác xem sao.</p>
+
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-[#292522] sm:text-2xl">
+                Bạn học
+              </h1>
+              <p className="mt-0.5 text-xs text-[#898078] sm:text-sm">
+                Danh sách thành viên lớp học của bạn
+              </p>
+            </div>
           </div>
-        ) : (
-          filteredStudents.map((student, i) => {
-            const frame = getStudentFrame(student.active_frame_id);
-            return (
-              <motion.div
-                key={student.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link 
-                  href={`/students/${student.id}`}
-                  className="flex flex-col items-center p-6 rounded-3xl bg-card border hover:shadow-md transition-all hover:-translate-y-1 group"
+        </motion.div>
+
+        {/* Thanh tìm kiếm và bộ lọc */}
+        <div className="mb-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a29a92]" />
+
+              <Input
+                type="search"
+                placeholder="Tìm kiếm bạn học..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="h-10 rounded-xl border-[#eee7df] bg-white pl-9 pr-9 text-xs shadow-sm placeholder:text-[#aaa198] focus-visible:ring-[#e7a49a] sm:text-sm"
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Xóa tìm kiếm"
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa198] hover:text-foreground"
                 >
-                  <div className="relative w-32 h-32 mb-5">
-                    {frame && (
-                      <div 
-                        className="absolute -inset-2 rounded-full z-10 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity animate-spin-slow"
-                        style={{ 
-                          background: frame.image_url,
-                          WebkitMask: "radial-gradient(transparent 65%, black 65%)",
-                          mask: "radial-gradient(transparent 65%, black 65%)"
-                        }}
-                      />
-                    )}
-                    <div className="w-full h-full rounded-full overflow-hidden border-4 border-background shadow-sm relative z-0">
-                      {student.photo_url ? (
-                        <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                      ) : (
-                        <AvatarGradient name={student.name} className="w-full h-full" textClassName="text-4xl" />
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowFilters((value) => !value)}
+              className={`h-10 shrink-0 gap-1.5 rounded-xl border-[#eee7df] px-3 text-xs ${
+                roleFilter !== "all"
+                  ? "border-[#e7b4a9] bg-[#fff0eb] text-[#c45e50]"
+                  : "bg-white text-[#625a53]"
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Lọc
+              {roleFilter !== "all" && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#d65d50] text-[10px] text-white">
+                  1
+                </span>
+              )}
+            </Button>
+          </div>
+
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-[#eee7df] bg-white p-3 shadow-sm"
+            >
+              <p className="mb-2 text-xs font-semibold text-[#625a53]">
+                Lọc theo vai trò
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {roleOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setRoleFilter(option.value)}
+                    className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                      roleFilter === option.value
+                        ? "border-[#d65d50] bg-[#fff0eb] font-semibold text-[#c45e50]"
+                        : "border-[#eee7df] bg-white text-[#766d65] hover:bg-[#faf6f1]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Số lượng thành viên */}
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs text-[#8b8178]">
+            {isLoading
+              ? "Đang tải danh sách..."
+              : `${filteredStudents.length} thành viên`}
+          </p>
+
+          {(search || roleFilter !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setRoleFilter("all");
+              }}
+              className="text-xs font-medium text-[#c45e50] hover:underline"
+            >
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+
+        {/* Lưới học sinh */}
+        <div className="rounded-2xl border border-[#eee7df] bg-white p-3 shadow-[0_2px_12px_rgba(70,50,30,0.035)] sm:p-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
+            {isLoading ? (
+              Array.from({ length: 10 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex min-h-[150px] flex-col items-center rounded-xl border border-[#f0eae3] p-3 sm:min-h-[165px]"
+                >
+                  <Skeleton className="mb-3 h-12 w-12 rounded-full sm:h-14 sm:w-14" />
+                  <Skeleton className="mb-2 h-3 w-24 max-w-full" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))
+            ) : filteredStudents.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center py-14 text-center">
+                <UserCircle2 className="mb-3 h-12 w-12 text-[#d8cec3]" />
+
+                <h3 className="text-sm font-bold text-[#49413b]">
+                  Không tìm thấy bạn học
+                </h3>
+
+                <p className="mt-1 text-xs text-[#91867c]">
+                  Thử tên khác hoặc thay đổi bộ lọc nhé.
+                </p>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 rounded-lg"
+                  onClick={() => {
+                    setSearch("");
+                    setRoleFilter("all");
+                  }}
+                >
+                  Xem tất cả thành viên
+                </Button>
+              </div>
+            ) : (
+              filteredStudents.map((student, index) => {
+                const frame = getStudentFrame(student.active_frame_id);
+                const isMonitor = student.role === "monitor";
+                const isViceMonitor = student.role === "vice_monitor";
+
+                return (
+                  <motion.div
+                    key={student.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.22,
+                      delay: Math.min(index * 0.025, 0.2),
+                    }}
+                  >
+                    <Link
+                      href={`/students/${student.id}`}
+                      className="group relative flex h-full min-h-[150px] flex-col items-center rounded-xl border border-[#f0eae3] bg-white px-2.5 py-3.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[#e8c6b9] hover:bg-[#fffdfa] hover:shadow-[0_5px_18px_rgba(80,50,30,0.07)] sm:min-h-[165px] sm:px-3 sm:py-4"
+                    >
+                      {/* Huy hiệu lớp trưởng */}
+                      {isMonitor && (
+                        <div
+                          title="Lớp trưởng"
+                          className="absolute right-2 top-2 text-[#e5a52d]"
+                        >
+                          <Crown className="h-4 w-4 fill-current" />
+                        </div>
                       )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <h3 className="text-lg font-bold group-hover:text-primary transition-colors line-clamp-1">{student.name}</h3>
-                    {student.nickname && <p className="text-sm text-muted-foreground mb-2">({student.nickname})</p>}
-                    <div className="mt-2 h-6 flex items-center justify-center">
-                      {getRoleBadge(student.role)}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })
-        )}
+
+                      {/* Avatar và khung ảnh */}
+                      <div className="relative mb-2.5 h-12 w-12 shrink-0 sm:h-14 sm:w-14">
+                        {frame && (
+                          <div
+                            className="pointer-events-none absolute -inset-1.5 z-10 rounded-full opacity-90"
+                            style={{
+                              backgroundImage: `url("${frame.image_url}")`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
+                              WebkitMask:
+                                "radial-gradient(transparent 61%, black 64%)",
+                              mask:
+                                "radial-gradient(transparent 61%, black 64%)",
+                            }}
+                          />
+                        )}
+
+                        <div className="relative z-0 h-full w-full overflow-hidden rounded-full bg-[#f4e7dd] ring-2 ring-white">
+                          {student.photo_url ? (
+                            <img
+                              src={student.photo_url}
+                              alt={student.name}
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                          ) : (
+                            <AvatarGradient
+                              name={student.name}
+                              className="h-full w-full"
+                              textClassName="text-lg sm:text-xl"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tên và vai trò */}
+                      <h3 className="w-full truncate text-[11px] font-bold text-[#39332e] transition-colors group-hover:text-[#c45e50] sm:text-xs">
+                        {student.name}
+                      </h3>
+
+                      {student.nickname && (
+                        <p className="mt-1 w-full truncate text-[10px] text-[#968a7f]">
+                          {student.nickname}
+                        </p>
+                      )}
+
+                      <div className="mt-1.5 flex min-h-[17px] items-center justify-center">
+                        {(isMonitor || isViceMonitor) ? (
+                          <Badge
+                            className={`h-5 border-none px-2 text-[9px] font-medium ${
+                              isMonitor
+                                ? "bg-[#fff1d6] text-[#a36b10] hover:bg-[#fff1d6]"
+                                : "bg-[#f5e9fa] text-[#8a5aa1] hover:bg-[#f5e9fa]"
+                            }`}
+                          >
+                            {getRoleLabel(student.role)}
+                          </Badge>
+                        ) : (
+                          <span className="text-[10px] text-[#a9a097]">
+                            Thành viên
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="mt-1 text-[10px] leading-none tracking-[2px] text-[#c5b9ad] transition-colors group-hover:text-[#d65d50]">
+                        ···
+                      </span>
+                    </Link>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+
+          {!isLoading && filteredStudents.length > 0 && (
+            <div className="mt-4 border-t border-[#f1ebe5] pt-3 text-center">
+              <p className="text-[11px] text-[#9a8e83]">
+                Đang hiển thị {filteredStudents.length} / {safeStudents.length} thành viên
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Chân trang được giữ ở Layout chung */}
       </div>
     </div>
   );
 }
+
