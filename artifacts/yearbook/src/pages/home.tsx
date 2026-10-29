@@ -248,26 +248,26 @@ export default function Home() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
-            className="relative z-10 flex min-h-[190px] max-w-2xl flex-col items-start justify-center p-5 text-white sm:min-h-[230px] sm:p-8"
+            className=" relative z-10 flex min-h-[190px] flex-col items-start justify-center px-5 py-6 sm:min-h-[230px] sm:px-8 sm:py-8 lg:min-h-[560px] lg:px-12 lg:py-12"
           >
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs backdrop-blur-sm">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5" />
               Không gian lưu giữ thanh xuân
             </div>
 
-            <h1 className="text-2xl font-bold leading-tight sm:text-4xl">
+            <h1 className="max-w-2xl text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl lg:text-5xl lg:leading-[1.15]">
               Thanh xuân có bạn
               <br />
               là điều tuyệt vời nhất!
             </h1>
 
-            <p className="mt-3 max-w-lg text-xs leading-5 text-white/85 sm:text-sm">
+            <p className=" mt-4 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base lg:text-lg ">
               Lưu giữ hình ảnh, câu chuyện và những khoảnh khắc đáng nhớ
               cùng bạn bè qua từng trang kỷ yếu.
             </p>
 
             <Link href="/yearbooks/mine" className="mt-5">
-              <Button className="h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:text-sm">
+              <Button className="mt-6 h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:text-sm">
                 Khám phá kỷ yếu
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
