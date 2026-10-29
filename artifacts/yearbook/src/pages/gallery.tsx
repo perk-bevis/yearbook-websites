@@ -165,7 +165,7 @@ export default function Gallery() {
 
       {/* Photo Grid */}
       {isLoading ? (
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {Array(8).fill(0).map((_, i) => (
             <div key={i} className="bg-muted rounded-2xl animate-pulse" style={{ height: `${Math.max(150, Math.random() * 300 + 150)}px` }} />
           ))}
@@ -175,7 +175,7 @@ export default function Gallery() {
           Chưa có hình ảnh nào trong thư mục này.
         </div>
       ) : (
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           <AnimatePresence>
             {photos?.map((photo, i) => (
               <motion.div
