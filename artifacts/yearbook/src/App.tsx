@@ -169,6 +169,7 @@ function Router() {
             <Route path="/frames" component={Frames} />
             <Route path="/feed" component={Feed} />
             <Route path="/ban-be" component={Friends} />
+            <Route path="/quy-lop" component={ClassFund} />
             <Route path="/profile" component={Profile} />
             <Route path="/profile/:userId" component={PublicProfile} />
             <Route path="/subscribe" component={Subscribe} />
