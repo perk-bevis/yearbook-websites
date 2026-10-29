@@ -68,7 +68,11 @@ class PhotoInput(BaseModel):
     uploaded_by: Optional[str] = None
     admin_token: Optional[str] = None
 
-
+class Base64PhotoInput(BaseModel):
+    image_data: str
+    caption: Optional[str] = None
+    category: str = "other"
+    
 def _valid_admin_token(token: Optional[str]) -> bool:
     if not token:
         return False
@@ -252,6 +256,64 @@ def create_photo(
                 ),
             )
 
+            return row_to_dict(cur, cur.fetchone())
+
+
+@router.post("/gallery/base64", status_code=201)
+def create_base64_photo(
+    body: Base64PhotoInput,
+    clerk_user_id: str = Depends(require_user),
+):
+    if not _can_manage_gallery(clerk_user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Chỉ giáo viên mới được thêm ảnh vào album",
+        )
+
+    match = re.fullmatch(
+        r"data:(image/(?:jpeg|png|gif|webp));base64,([A-Za-z0-9+/]*={0,2})",
+        body.image_data,
+    )
+
+    if not match:
+        raise HTTPException(
+            status_code=415,
+            detail="Dữ liệu ảnh Base64 không hợp lệ",
+        )
+
+    content_type, encoded = match.groups()
+
+    try:
+        image_bytes = base64.b64decode(encoded, validate=True)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Base64 không hợp lệ",
+        )
+
+    if not image_bytes or len(image_bytes) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="Ảnh phải có dung lượng từ 1 byte đến 10 MB",
+        )
+
+    validate_image(image_bytes, content_type)
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO photos (url, caption, category, uploaded_by)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    body.image_data,
+                    body.caption,
+                    body.category,
+                    clerk_user_id,
+                ),
+            )
             return row_to_dict(cur, cur.fetchone())
 
 
