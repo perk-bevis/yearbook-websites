@@ -605,23 +605,56 @@ export default function Home() {
         </section>
 
         {/* CTA cuối trang */}
-        <section className="flex flex-col items-start justify-between gap-4 rounded-xl border border-border/70 bg-muted/30 p-5 sm:flex-row sm:items-center sm:p-6">
-          <div>
-            <h2 className="text-base font-bold sm:text-lg">
-              Cùng lưu giữ những năm tháng đẹp nhất
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Ảnh, kỷ niệm và những câu chuyện xứng đáng được lưu giữ.
-            </p>
-          </div>
+        <section className="relative overflow-hidden rounded-2xl border border-[#eadbc8] bg-gradient-to-br from-[#fbf4e9] via-[#fffaf4] to-[#f5e5d5] p-5 text-[#49392e] shadow-sm sm:p-7 lg:p-8">
+  <div className="pointer-events-none absolute -right-10 -top-12 h-48 w-48 rounded-full bg-[#e6c9a8]/30 blur-2xl" />
 
-          <Link href="/yearbooks/mine" className="shrink-0">
-            <Button className="rounded-lg">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Kỷ yếu của tôi
-            </Button>
-          </Link>
-        </section>
+  <div className="relative grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+    <div>
+      <span className="inline-flex items-center gap-2 rounded-full border border-[#d9c1a5] bg-white/70 px-3 py-1.5 text-xs font-semibold text-[#8a6746]">
+        <Heart className="h-3.5 w-3.5" />
+        KẾT NỐI SAU NGÀY RA TRƯỜNG
+      </span>
+
+      <h2 className="mt-4 max-w-xl text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+        Quỹ lớp — cùng nhau giữ lửa tình bạn
+      </h2>
+
+      <p className="mt-3 max-w-xl text-sm leading-6 text-[#786657] sm:text-base">
+        Theo dõi các khoản thu chi, chuẩn bị họp lớp, thăm thầy cô
+        và cùng đóng góp cho những hoạt động ý nghĩa của tập thể.
+      </p>
+
+      <Link href="/quy-lop" className="mt-5 inline-flex">
+        <Button className="rounded-xl bg-[#8d5e43] px-5 text-white hover:bg-[#744a34]">
+          Xem quỹ lớp
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </Link>
+    </div>
+
+    <div className="grid grid-cols-2 gap-3">
+      <div className="rounded-2xl border border-[#eadbc8] bg-white/75 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e6d6] text-[#8d5e43]">
+          <Heart className="h-5 w-5" />
+        </div>
+        <p className="mt-4 text-sm font-bold">Minh bạch</p>
+        <p className="mt-1 text-xs leading-5 text-[#786657]">
+          Cùng theo dõi thu chi và các khoản đóng góp.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-[#eadbc8] bg-white/75 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e6d6] text-[#8d5e43]">
+          <Calendar className="h-5 w-5" />
+        </div>
+        <p className="mt-4 text-sm font-bold">Hoạt động lớp</p>
+        <p className="mt-1 text-xs leading-5 text-[#786657]">
+          Góp sức cho họp lớp và những dịp đặc biệt.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
       </div>
     </div>
   );
