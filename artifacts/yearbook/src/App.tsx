@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import MyYearbooks from '@/pages/my-yearbooks';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { ClerkProvider, SignIn, SignUp, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -157,6 +158,7 @@ function Router() {
         <Layout>
           <Switch>
             <Route path="/" component={Home} />
+            <Route path="/yearbooks/mine" component={MyYearbooks} />
             <Route path="/students/:id" component={StudentDetail} />
             <Route path="/students" component={Students} />
             <Route path="/gallery" component={Gallery} />
