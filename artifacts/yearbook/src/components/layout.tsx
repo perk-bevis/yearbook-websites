@@ -24,6 +24,8 @@ import {
   ChevronDown,
   Sparkles,
   Wallet,
+  CalendarDays, 
+  Lightbulb,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useUser, useClerk, Show } from '@clerk/react';
@@ -39,6 +41,7 @@ const NAV_MAIN = [
   { href: '/ban-be', label: 'Bạn bè', icon: UsersRound },
   { href: '/tin-nhan', label: 'Tin nhắn', icon: MessageCircle },
   { href: '/quy-lop', label: 'Quỹ lớp', icon: Wallet },
+  { href: '/events', label: 'Sự kiện', icon: CalendarDays },
 ];
 
 const NAV_DISCOVER = [
@@ -49,6 +52,11 @@ const NAV_DISCOVER = [
   { href: '/teachers', label: 'Lời thầy cô', icon: GraduationCap },
   { href: '/frames', label: 'Khung ảnh', icon: Frame },
   { href: '/feed', label: 'Bảng tin', icon: Newspaper },
+  {
+    href: '/de-xuat-tinh-nang',
+    label: 'Đề xuất tính năng',
+    icon: Lightbulb,
+  },
 ];
 
 function MessagesIcon() {
