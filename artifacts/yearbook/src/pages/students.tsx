@@ -8,7 +8,7 @@ import {
   Search,
   UserCircle2,
   SlidersHorizontal,
-  ShieldCheck,
+  Award,
   X,
   Users,
 } from "lucide-react";
@@ -264,7 +264,7 @@ export default function Students() {
                         aria-label="Lớp trưởng"
                         className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#fff1d6] text-[#b77916] ring-1 ring-[#f2d69b]"
   >
-                          <ShieldCheck className="h-4 w-4" />
+                          <Award className="h-4 w-4" />
                       </div>
                       )}
                       {/* Avatar và khung ảnh */}
