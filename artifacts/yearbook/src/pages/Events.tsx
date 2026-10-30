@@ -209,7 +209,7 @@ export default function Events() {
         )}
 
         {!isLoading && !isError && events.length === 0 && (
-          <div className="rounded-2xl border border-dashed p-12 text-center">
+          <div className="rounded-2xl border-2 border-dashed border-[#9CA3AF] bg-white p-12 text-center" >
             <CalendarDays
               size={40}
               className="mx-auto mb-4 text-muted-foreground"
@@ -300,7 +300,7 @@ export default function Events() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-form-title"
-            className="my-auto w-full max-w-xl rounded-2xl bg-background p-6 shadow-xl"
+            className="rainbow-card my-auto w-full max-w-xl p-6 shadow-xl"
           >
             <div className="mb-6 flex items-center justify-between">
               <div>
