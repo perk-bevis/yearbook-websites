@@ -49,49 +49,83 @@
 }
 
 
+
 :root {
-  /* Nền và chữ */
-  --background: 42 35% 96%;
-  --foreground: 255 15% 19%;
+  /* Nền tổng thể: trắng hơi lạnh */
+  --background: 210 33% 98%;
+  --foreground: 220 18% 12%;
 
-  /* Thẻ nội dung */
-  --card: 40 40% 99%;
-  --card-foreground: 255 15% 19%;
-  --card-border: 38 25% 89%;
+  /* Card trắng, viền đen rõ */
+  --card: 0 0% 100%;
+  --card-foreground: 220 18% 12%;
+  --card-border: 220 15% 18%;
 
-  /* Popover / menu nổi */
-  --popover: 40 40% 99%;
-  --popover-foreground: 255 15% 19%;
-  --popover-border: 38 25% 89%;
+  /* Menu nổi */
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 18% 12%;
+  --popover-border: 220 15% 18%;
 
-  /* Tím lavender — màu chủ đạo */
-  --primary: 258 45% 52%;
-  --primary-foreground: 0 0% 100%;
+  /* Màu chủ đạo: đỏ cầu vồng */
+  --primary: 0 100% 65%;
+  --primary-foreground: 220 18% 10%;
 
-  /* Xanh bạc hà */
-  --secondary: 145 35% 88%;
-  --secondary-foreground: 153 35% 27%;
+  /* Màu phụ: xanh dương nhạt */
+  --secondary: 205 85% 90%;
+  --secondary-foreground: 220 60% 25%;
 
   /* Nền phụ */
-  --muted: 40 25% 92%;
-  --muted-foreground: 255 8% 43%;
+  --muted: 215 25% 94%;
+  --muted-foreground: 215 12% 40%;
 
-  /* Vàng bơ — màu nhấn */
-  --accent: 44 85% 78%;
-  --accent-foreground: 255 18% 20%;
+  /* Màu nhấn: vàng */
+  --accent: 48 100% 60%;
+  --accent-foreground: 220 18% 10%;
 
-  /* Cảnh báo / lỗi */
-  --destructive: 0 65% 53%;
+  /* Trạng thái */
+  --destructive: 0 85% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Viền và focus */
-  --border: 38 22% 87%;
-  --input: 38 22% 87%;
-  --ring: 258 45% 52%;
+  /* Viền đen và focus */
+  --border: 220 15% 18%;
+  --input: 220 15% 18%;
+  --ring: 265 75% 58%;
 
   --radius: 1rem;
   --app-font-sans: 'Plus Jakarta Sans', sans-serif;
   --app-font-display: 'Caveat', cursive;
+}
+
+/* Chỉ dùng khi giao diện thực sự bật chế độ tối */
+.dark {
+  --background: 225 20% 10%;
+  --foreground: 0 0% 98%;
+
+  --card: 225 18% 15%;
+  --card-foreground: 0 0% 98%;
+  --card-border: 0 0% 75%;
+
+  --popover: 225 18% 15%;
+  --popover-foreground: 0 0% 98%;
+  --popover-border: 0 0% 75%;
+
+  --primary: 0 100% 68%;
+  --primary-foreground: 225 20% 10%;
+
+  --secondary: 205 55% 28%;
+  --secondary-foreground: 205 90% 95%;
+
+  --muted: 225 15% 22%;
+  --muted-foreground: 220 15% 75%;
+
+  --accent: 48 90% 52%;
+  --accent-foreground: 225 20% 10%;
+
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 72%;
+  --input: 0 0% 72%;
+  --ring: 265 85% 70%;
 }
 
 
