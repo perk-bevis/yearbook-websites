@@ -551,7 +551,7 @@ const scrollYearbooks = (direction: "left" | "right") => {
                 </div>
 
                 <Link
-                  href="/events"
+                  href="/timeline"
                   className="text-xs font-medium text-primary hover:underline"
                 >
                   Xem thêm
