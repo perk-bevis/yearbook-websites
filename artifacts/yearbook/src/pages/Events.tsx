@@ -133,7 +133,7 @@ export default function Events() {
             setNotice("");
             setShowForm(true);
           }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-medium text-primary-foreground hover:opacity-90"
+          className="rainbow-button inline-flex items-center justify-center gap-2 px-5 py-3 font-bold"
         >
           <Plus size={18} />
           Tạo sự kiện
