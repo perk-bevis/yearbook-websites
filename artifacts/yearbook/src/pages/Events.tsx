@@ -148,7 +148,7 @@ export default function Events() {
   ].map((item) => (
     <div
       key={item.label}
-      className="rainbow-card relative overflow-hidden p-5"
+      className="rainbow-card p-5 pt-7"
     >
       <div
         className="absolute inset-x-0 top-0 h-1"
