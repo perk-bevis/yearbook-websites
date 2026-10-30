@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MyYearbooks from '@/pages/my-yearbooks';
+import YearbookDetail from '@/pages/yearbook-detail';
 import ClassFund from '@/pages/class-fund';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { ClerkProvider, SignIn, SignUp, useClerk } from '@clerk/react';
@@ -160,6 +161,7 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/yearbooks/mine" component={MyYearbooks} />
+            <Route path="/yearbook/:slug" component={YearbookDetail} />
             <Route path="/students/:id" component={StudentDetail} />
             <Route path="/students" component={Students} />
             <Route path="/gallery" component={Gallery} />
