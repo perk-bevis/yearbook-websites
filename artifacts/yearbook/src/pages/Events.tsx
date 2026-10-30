@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getListEventsQueryKey } from "@workspace/api-client-react";
 import {
   CalendarDays,
   Clock3,
@@ -54,6 +56,8 @@ export default function Events() {
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<EventDraft>(EMPTY_DRAFT);
   const [notice, setNotice] = useState("");
+  const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const events = useMemo(() => {
     const items = Array.isArray(data) ? (data as EventItem[]) : [];
@@ -99,15 +103,66 @@ export default function Events() {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  
+async function handleSubmit(
+  event: React.FormEvent<HTMLFormElement>,
+) {
+  event.preventDefault();
+  setNotice("");
 
-    // TODO: Gọi API tạo sự kiện của backend tại đây.
-    // Hiện tại chưa lưu vào cơ sở dữ liệu.
-    setNotice(
-      "Form hợp lệ. Cần kết nối API tạo sự kiện để lưu dữ liệu.",
-    );
+  if (!draft.title.trim() || !draft.event_date) {
+    setNotice("Vui lòng nhập tên sự kiện và ngày giờ.");
+    return;
   }
+
+  const date = new Date(draft.event_date);
+
+  if (Number.isNaN(date.getTime())) {
+    setNotice("Ngày giờ không hợp lệ.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const response = await fetch("/api/events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: draft.title.trim(),
+        event_date: date.toISOString(),
+        location: draft.location.trim() || null,
+        description: draft.description.trim() || null,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(
+        error?.detail || "Không thể tạo sự kiện.",
+      );
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: getListEventsQueryKey(),
+    });
+
+    setNotice("Tạo sự kiện thành công!");
+    setDraft(EMPTY_DRAFT);
+    setShowForm(false);
+  } catch (error) {
+    setNotice(
+      error instanceof Error
+        ? error.message
+        : "Có lỗi xảy ra khi tạo sự kiện.",
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+}
+
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 p-5 md:p-8">
