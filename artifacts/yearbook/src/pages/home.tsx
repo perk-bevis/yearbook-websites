@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect,useRef, useState } from "react";
 import {
   useGetStats,
   useListStudents,
@@ -13,6 +13,8 @@ import {
   Heart,
   Image as ImageIcon,
   Users,
+  ChevronLeft,
+  ChevronRight,
   BookOpen,
   Plus,
   Search,
@@ -219,6 +221,17 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+  const yearbooksTrackRef = useRef<HTMLDivElement>(null);
+
+const scrollYearbooks = (direction: "left" | "right") => {
+  const track = yearbooksTrackRef.current;
+  if (!track) return;
+
+  track.scrollBy({
+    left: direction === "left" ? -track.clientWidth : track.clientWidth,
+    behavior: "smooth",
+  });
+};
 
   const featuredStudents = Array.isArray(students)
     ? students.slice(0, 4)
@@ -310,98 +323,135 @@ export default function Home() {
         )}
 
         {/* Kỷ yếu gần đây */}
-        <section>
-          <SectionHeading
-            title="Kỷ yếu gần đây"
-            description="Những không gian lưu giữ kỷ niệm của bạn."
-            href="/yearbooks/mine"
-          />
+        
+{/* Kỷ yếu gần đây */}
+<section>
+  <div className="mb-4 flex items-end justify-between gap-3">
+    <div className="min-w-0">
+      <h2 className="text-lg font-bold tracking-tight sm:text-xl">
+        Kỷ yếu gần đây
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+        Những không gian lưu giữ kỷ niệm của bạn.
+      </p>
+    </div>
 
-          {yearbooksLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="overflow-hidden rounded-xl border border-border/60"
-                >
-                  <Skeleton className="h-32 rounded-none sm:h-36" />
-                  <div className="space-y-3 p-3">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : yearbooks.length > 0 ? (
-            <motion.div
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.07 },
-                },
-              }}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-            >
-              {yearbooks.slice(0, 6).map((item, index) => (
-                <motion.div key={item.id ?? item.slug ?? index} variants={fadeUp}>
-                  <YearbookCard item={item} />
-                </motion.div>
-              ))}
+    {!yearbooksLoading && yearbooks.length > 0 && (
+      <div className="flex shrink-0 items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Kỷ yếu trước"
+          className="h-9 w-9 rounded-full"
+          onClick={() => scrollYearbooks("left")}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
 
-              <Link
-                href="/yearbooks/mine"
-                className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-primary/40 bg-primary/[0.035] p-5 text-center transition-colors hover:bg-primary/[0.08]"
-              >
-                <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-card text-primary">
-                  <Plus className="h-5 w-5" />
-                </span>
-                <span className="text-sm font-semibold">Xem tất cả kỷ yếu</span>
-                <span className="mt-1 text-xs text-muted-foreground">
-                  Quản lý hoặc tạo kỷ yếu mới
-                </span>
-              </Link>
-            </motion.div>
-          ) : (
-            <div className="rounded-xl border border-border/70 bg-card px-5 py-8 text-center">
-              <BookOpen className="mx-auto h-8 w-8 text-primary/70" />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Kỷ yếu tiếp theo"
+          className="h-9 w-9 rounded-full"
+          onClick={() => scrollYearbooks("right")}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    )}
+  </div>
 
-              <h3 className="mt-3 font-semibold">
-                {yearbooksError
-                  ? "Chưa thể tải danh sách kỷ yếu"
-                  : "Bắt đầu tạo kỷ yếu của bạn"}
-              </h3>
+  {yearbooksLoading ? (
+    <div className="flex gap-4 overflow-hidden">
+      {[1, 2, 3].map((item) => (
+        <div
+          key={item}
+          className="w-[280px] shrink-0 overflow-hidden rounded-xl border border-border/60 sm:w-[320px]"
+        >
+          <Skeleton className="h-32 rounded-none sm:h-36" />
+          <div className="space-y-3 p-3">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : yearbooks.length > 0 ? (
+    <motion.div
+      ref={yearbooksTrackRef}
+      variants={{
+        hidden: { opacity: 0 },
+        show: {
+          opacity: 1,
+          transition: { staggerChildren: 0.07 },
+        },
+      }}
+      initial="hidden"
+      animate="show"
+      className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
+      style={{ scrollbarWidth: "none" }}
+    >
+      {yearbooks.slice(0, 6).map((item, index) => (
+        <motion.div
+          key={item.id ?? item.slug ?? index}
+          variants={fadeUp}
+          className="w-[280px] min-w-0 shrink-0 snap-start sm:w-[320px]"
+        >
+          <YearbookCard item={item} />
+        </motion.div>
+      ))}
+    </motion.div>
+  ) : (
+    <div className="rounded-xl border border-border/70 bg-card px-5 py-8 text-center">
+      <BookOpen className="mx-auto h-8 w-8 text-primary/70" />
 
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                {yearbooksError
-                  ? "Bạn có thể thử tải lại hoặc mở trang quản lý kỷ yếu."
-                  : "Tạo một không gian riêng để lưu giữ ảnh, kỷ niệm và câu chuyện của lớp."}
-              </p>
+      <h3 className="mt-3 font-semibold">
+        {yearbooksError
+          ? "Chưa thể tải danh sách kỷ yếu"
+          : "Bắt đầu tạo kỷ yếu của bạn"}
+      </h3>
 
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {yearbooksError && (
-                  <Button
-                    variant="outline"
-                    className="rounded-lg"
-                    onClick={() => window.location.reload()}
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Tải lại
-                  </Button>
-                )}
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        {yearbooksError
+          ? "Bạn có thể thử tải lại hoặc mở trang quản lý kỷ yếu."
+          : "Tạo một không gian riêng để lưu giữ ảnh, kỷ niệm và câu chuyện của lớp."}
+      </p>
 
-                <Link href="/yearbooks/mine">
-                  <Button className="rounded-lg">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Đến trang kỷ yếu
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </section>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {yearbooksError && (
+          <Button
+            variant="outline"
+            className="rounded-lg"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tải lại
+          </Button>
+        )}
+
+        <Link href="/yearbooks/mine">
+          <Button className="rounded-lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Đến trang kỷ yếu
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )}
+
+  {/* Nút xem danh sách kỷ yếu */}
+  <div className="mt-4 flex justify-center">
+    <Link href="/yearbooks/mine">
+      <Button variant="outline" className="rounded-lg text-xs">
+        Xem danh sách kỷ yếu
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </Link>
+  </div>
+</section>
+
 
         {/* Hoạt động mới nhất */}
         <section>
