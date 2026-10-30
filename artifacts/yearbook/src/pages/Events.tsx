@@ -332,7 +332,7 @@ export default function Events() {
                   value={draft.title}
                   onChange={(e) => updateDraft("title", e.target.value)}
                   placeholder="Ví dụ: Họp lớp cuối năm"
-                  className="w-full rounded-xl border bg-background px-4 py-3"
+                  className="w-full rounded-xl border-2 border-[#D6D8E6] bg-white px-4 py-3 text-[#1E1E1E] outline-none transition focus:border-[#9C27B0] focus:ring-2 focus:ring-[#9C27B0]/15"
                 />
               </label>
 
@@ -347,7 +347,7 @@ export default function Events() {
                   onChange={(e) =>
                     updateDraft("event_date", e.target.value)
                   }
-                  className="w-full rounded-xl border bg-background px-4 py-3"
+                  className="w-full rounded-xl border-2 border-[#D6D8E6] bg-white px-4 py-3 text-[#1E1E1E] outline-none transition focus:border-[#9C27B0] focus:ring-2 focus:ring-[#9C27B0]/15"
                 />
               </label>
 
@@ -359,7 +359,7 @@ export default function Events() {
                     updateDraft("location", e.target.value)
                   }
                   placeholder="Địa điểm tổ chức"
-                  className="w-full rounded-xl border bg-background px-4 py-3"
+                  className="w-full rounded-xl border-2 border-[#D6D8E6] bg-white px-4 py-3 text-[#1E1E1E] outline-none transition focus:border-[#9C27B0] focus:ring-2 focus:ring-[#9C27B0]/15"
                 />
               </label>
 
