@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response
-from pydantic import BaseModel
+
+from datetime import datetime
 from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from database import get_db, row_to_dict, rows_to_list
 
@@ -8,16 +11,18 @@ router = APIRouter(tags=["events"])
 
 
 class EventInput(BaseModel):
-    title: str
+    title: str = Field(min_length=1, max_length=500)
     description: Optional[str] = None
-    event_date: str
+    event_date: datetime
+    location: Optional[str] = None
     photo_url: Optional[str] = None
 
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    event_date: Optional[str] = None
+    event_date: Optional[datetime] = None
+    location: Optional[str] = None
     photo_url: Optional[str] = None
 
 
@@ -31,28 +36,55 @@ def list_events():
 
 @router.post("/events", status_code=201)
 def create_event(data: EventInput):
+    title = data.title.strip()
+    if not title:
+        raise HTTPException(422, "Tên sự kiện không được để trống")
+
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO events (title, description, event_date, photo_url) VALUES (%s, %s, %s, %s) RETURNING *",
-                (data.title, data.description, data.event_date, data.photo_url),
+                """
+                INSERT INTO events
+                    (title, description, event_date, location, photo_url)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    title,
+                    data.description,
+                    data.event_date,
+                    data.location,
+                    data.photo_url,
+                ),
             )
             return row_to_dict(cur, cur.fetchone())
 
 
 @router.put("/events/{id}")
 def update_event(id: int, data: EventUpdate):
-    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    updates = data.model_dump(exclude_unset=True)
     if not updates:
-        raise HTTPException(status_code=400, detail="Không có trường nào để cập nhật")
+        raise HTTPException(400, "Không có trường nào để cập nhật")
+
+    allowed = {"title", "description", "event_date", "location", "photo_url"}
+    updates = {k: v for k, v in updates.items() if k in allowed}
+
+    if "title" in updates and updates["title"] is not None:
+        updates["title"] = updates["title"].strip()
+        if not updates["title"]:
+            raise HTTPException(422, "Tên sự kiện không được để trống")
+
     with get_db() as conn:
         with conn.cursor() as cur:
             sets = ", ".join(f"{k} = %s" for k in updates)
             values = list(updates.values()) + [id]
-            cur.execute(f"UPDATE events SET {sets} WHERE id = %s RETURNING *", values)
+            cur.execute(
+                f"UPDATE events SET {sets} WHERE id = %s RETURNING *",
+                values,
+            )
             row = cur.fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail="Không tìm thấy sự kiện")
+                raise HTTPException(404, "Không tìm thấy sự kiện")
             return row_to_dict(cur, row)
 
 
@@ -60,7 +92,10 @@ def update_event(id: int, data: EventUpdate):
 def delete_event(id: int):
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM events WHERE id = %s RETURNING id", (id,))
+            cur.execute(
+                "DELETE FROM events WHERE id = %s RETURNING id",
+                (id,),
+            )
             if not cur.fetchone():
-                raise HTTPException(status_code=404, detail="Không tìm thấy sự kiện")
+                raise HTTPException(404, "Không tìm thấy sự kiện")
     return Response(status_code=204)
