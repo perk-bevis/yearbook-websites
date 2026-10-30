@@ -2,23 +2,23 @@ import { useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import MyYearbooks from '@/pages/my-yearbooks';
-import YearbookDetail from '@/pages/yearbook-detail';
-import ClassFund from '@/pages/class-fund';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { ClerkProvider, SignIn, SignUp, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Layout } from '@/components/layout';
-import Events from "./pages/Events";
-import FeatureRequests from "./pages/FeatureRequests";
 
 import Home from '@/pages/home';
+import MyYearbooks from '@/pages/my-yearbooks';
+import YearbookDetail from '@/pages/yearbook-detail';
+import ClassFund from '@/pages/class-fund';
 import Students from '@/pages/students';
 import StudentDetail from '@/pages/student-detail';
 import Gallery from '@/pages/gallery';
 import Memories from '@/pages/memories';
-import Events from '@/pages/events';
+import Events from '@/pages/Events';
+import Timeline from '@/pages/timeline';
+import FeatureRequests from '@/pages/FeatureRequests';
 import Teachers from '@/pages/teachers';
 import Frames from '@/pages/frames';
 import Admin from '@/pages/admin';
@@ -169,12 +169,12 @@ function Router() {
             <Route path="/gallery" component={Gallery} />
             <Route path="/memories" component={Memories} />
             <Route path="/events" component={Events} />
+            <Route path="/timeline" component={Timeline} />
             <Route path="/teachers" component={Teachers} />
             <Route path="/frames" component={Frames} />
             <Route path="/feed" component={Feed} />
             <Route path="/ban-be" component={Friends} />
             <Route path="/quy-lop" component={ClassFund} />
-            <Route path="/events" element={<Events />} />
             <Route path="/profile" component={Profile} />
             <Route path="/profile/:userId" component={PublicProfile} />
             <Route path="/subscribe" component={Subscribe} />
@@ -183,7 +183,7 @@ function Router() {
             <Route path="/tin-nhan/nhom/:groupId" component={Messages} />
             <Route path="/tin-nhan/:partnerId" component={Messages} />
             <Route path="/tin-nhan" component={Messages} />
-            <Route path="/de-xuat-tinh-nang" element={<FeatureRequests />} />
+            <Route path="/de-xuat-tinh-nang" component={FeatureRequests} />
             {/* Admin at a hidden path — not linked in nav */}
             <Route path="/admins" component={Admin} />
             <Route component={NotFound} />
