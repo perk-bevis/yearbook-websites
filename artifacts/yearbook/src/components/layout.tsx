@@ -48,7 +48,7 @@ const NAV_DISCOVER = [
   { href: '/students', label: 'Bạn học', icon: Users },
   { href: '/gallery', label: 'Album ảnh', icon: ImageIcon },
   { href: '/memories', label: 'Kỷ niệm', icon: BookHeart },
-  { href: '/events', label: 'Dòng thời gian', icon: Clock },
+  { href: '/timeline', label: 'Dòng thời gian', icon: Clock },
   { href: '/teachers', label: 'Lời thầy cô', icon: GraduationCap },
   { href: '/frames', label: 'Khung ảnh', icon: Frame },
   { href: '/feed', label: 'Bảng tin', icon: Newspaper },
