@@ -231,10 +231,10 @@ export default function Events() {
             return (
               <article
                 key={event.id}
-                className="overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md"
+                className="rainbow-card overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="flex gap-4 p-5">
-                  <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl border-2 border-[#111111] bg-[#E8F3FF] text-[#2196F3]">
                     <span className="text-xs font-semibold uppercase">
                       {Number.isNaN(date.getTime())
                         ? "--"
@@ -252,11 +252,12 @@ export default function Events() {
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          upcoming
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium 
+                        ${
+  upcoming
+    ? "border border-[#4CAF50] bg-[#E1F5E8] text-[#246B3B]"
+    : "border border-[#D6D8E6] bg-[#F1F3F8] text-[#374151]"
+}
                       >
                         {upcoming ? "Sắp diễn ra" : "Đã diễn ra"}
                       </span>
