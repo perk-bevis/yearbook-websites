@@ -181,7 +181,7 @@ export default function Events() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên hoặc địa điểm sự kiện..."
-              className="w-full rounded-xl border bg-background py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border-2 border-[#D6D8E6] bg-white py-3 pl-10 pr-4 text-[#1E1E1E] outline-none transition focus:border-[#2196F3] focus:ring-2 focus:ring-[#2196F3]/20"
             />
           </div>
 
