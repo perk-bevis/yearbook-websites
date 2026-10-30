@@ -172,6 +172,7 @@ function Router() {
             <Route path="/feed" component={Feed} />
             <Route path="/ban-be" component={Friends} />
             <Route path="/quy-lop" component={ClassFund} />
+            <Route path="/events" element={<Events />} />
             <Route path="/profile" component={Profile} />
             <Route path="/profile/:userId" component={PublicProfile} />
             <Route path="/subscribe" component={Subscribe} />
@@ -180,6 +181,7 @@ function Router() {
             <Route path="/tin-nhan/nhom/:groupId" component={Messages} />
             <Route path="/tin-nhan/:partnerId" component={Messages} />
             <Route path="/tin-nhan" component={Messages} />
+            <Route path="/de-xuat-tinh-nang" element={<FeatureRequests />} />
             {/* Admin at a hidden path — not linked in nav */}
             <Route path="/admins" component={Admin} />
             <Route component={NotFound} />
