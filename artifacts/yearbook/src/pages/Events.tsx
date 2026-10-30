@@ -150,17 +150,7 @@ export default function Events() {
       key={item.label}
       className="rainbow-card p-5 pt-7"
     >
-      <div
-        className="absolute inset-x-0 top-0 h-1"
-        style={{
-          background:
-            item.label === "Tổng sự kiện"
-              ? "linear-gradient(90deg, #FF4D4D, #FF9800)"
-              : item.label === "Sắp diễn ra"
-                ? "linear-gradient(90deg, #FFD600, #4CAF50)"
-                : "linear-gradient(90deg, #2196F3, #9C27B0)",
-        }}
-      />
+      
       <p className="text-sm text-muted-foreground">
         {item.label}
       </p>
