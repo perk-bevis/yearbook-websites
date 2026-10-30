@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-import {
   Search,
   UserCircle2,
   SlidersHorizontal,
