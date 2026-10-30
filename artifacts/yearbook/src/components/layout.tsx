@@ -13,6 +13,7 @@ import {
   LogIn,
   UserCircle,
   Crown,
+  Gem,
   LogOut,
   BookOpen,
   Newspaper,
@@ -231,7 +232,7 @@ function UserMenu() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-muted"
               >
-                <Crown className="h-4 w-4 text-amber-500" />
+                <Gem className="h-4 w-4 text-amber-500" />
                 Nâng cấp Premium
               </Link>
 
