@@ -10,6 +10,8 @@ import { ClerkProvider, SignIn, SignUp, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Layout } from '@/components/layout';
+import Events from "./pages/Events";
+import FeatureRequests from "./pages/FeatureRequests";
 
 import Home from '@/pages/home';
 import Students from '@/pages/students';
