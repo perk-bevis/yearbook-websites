@@ -436,12 +436,15 @@ async function handleSubmit(
                 >
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="rainbow-button rounded-xl px-5 py-2.5"
-                >
-                  Kiểm tra thông tin
-                </button>
+                
+<button
+  type="submit"
+  disabled={isSubmitting}
+  className="rainbow-button rounded-xl px-5 py-2.5 disabled:opacity-60"
+>
+  {isSubmitting ? "Đang lưu..." : "Tạo sự kiện"}
+</button>
+
               </div>
             </form>
           </div>
