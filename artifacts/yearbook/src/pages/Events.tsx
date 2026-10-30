@@ -139,8 +139,7 @@ export default function Events() {
         </button>
       </header>
 
-      
-<section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-3">
   {[
     { label: "Tổng sự kiện", value: allEvents.length },
     { label: "Sắp diễn ra", value: upcomingCount },
@@ -148,16 +147,18 @@ export default function Events() {
   ].map((item) => (
     <div
       key={item.label}
-      className="rainbow-card p-5 pt-7"
+      className="relative overflow-hidden rounded-2xl border-2 border-[#111111] bg-white p-5 shadow-[3px_3px_0_#111111]"
     >
-      
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-[#6B7280]">
         {item.label}
       </p>
-      <p className="mt-2 text-3xl font-bold">{item.value}</p>
+      <p className="mt-2 text-3xl font-bold text-[#111111]">
+        {item.value}
+      </p>
     </div>
   ))}
 </section>
+
 
 
       <section className="space-y-4">
