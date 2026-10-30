@@ -139,23 +139,36 @@ export default function Events() {
         </button>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: "Tổng sự kiện", value: allEvents.length },
-          { label: "Sắp diễn ra", value: upcomingCount },
-          { label: "Đã diễn ra", value: pastCount },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="rainbow-card relative overflow-hidden p-5"
-          >
-            <p className="text-sm text-muted-foreground">
-              {item.label}
-            </p>
-            <p className="mt-2 text-3xl font-bold">{item.value}</p>
-          </div>
-        ))}
-      </section>
+      
+<section className="grid gap-4 sm:grid-cols-3">
+  {[
+    { label: "Tổng sự kiện", value: allEvents.length },
+    { label: "Sắp diễn ra", value: upcomingCount },
+    { label: "Đã diễn ra", value: pastCount },
+  ].map((item) => (
+    <div
+      key={item.label}
+      className="rainbow-card relative overflow-hidden p-5"
+    >
+      <div
+        className="absolute inset-x-0 top-0 h-1"
+        style={{
+          background:
+            item.label === "Tổng sự kiện"
+              ? "linear-gradient(90deg, #FF4D4D, #FF9800)"
+              : item.label === "Sắp diễn ra"
+                ? "linear-gradient(90deg, #FFD600, #4CAF50)"
+                : "linear-gradient(90deg, #2196F3, #9C27B0)",
+        }}
+      />
+      <p className="text-sm text-muted-foreground">
+        {item.label}
+      </p>
+      <p className="mt-2 text-3xl font-bold">{item.value}</p>
+    </div>
+  ))}
+</section>
+
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 md:flex-row">
