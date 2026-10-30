@@ -372,7 +372,7 @@ export default function Events() {
                     updateDraft("description", e.target.value)
                   }
                   placeholder="Nội dung và thông tin cần biết..."
-                  className="w-full resize-y rounded-xl border bg-background px-4 py-3"
+                  className="w-full resize-y rounded-xl border-2 border-[#D6D8E6] bg-white px-4 py-3 text-[#1E1E1E] outline-none transition focus:border-[#9C27B0] focus:ring-2 focus:ring-[#9C27B0]/15"
                 />
               </label>
 
@@ -386,13 +386,13 @@ export default function Events() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-xl border px-4 py-2.5"
+                  className="rounded-xl border-2 border-[#111111] bg-white px-4 py-2.5 font-semibold text-[#111111] transition hover:bg-[#F1F3F8]"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground"
+                  className="rainbow-button rounded-xl px-5 py-2.5"
                 >
                   Kiểm tra thông tin
                 </button>
