@@ -4,10 +4,11 @@ import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+import {
   Search,
   UserCircle2,
   SlidersHorizontal,
-  Crown,
+  ShieldCheck,
   X,
   Users,
 } from "lucide-react";
@@ -255,16 +256,17 @@ export default function Students() {
                       href={`/students/${student.id}`}
                       className="group relative flex h-full min-h-[150px] flex-col items-center rounded-xl border border-[#f0eae3] bg-white px-2.5 py-3.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[#e8c6b9] hover:bg-[#fffdfa] hover:shadow-[0_5px_18px_rgba(80,50,30,0.07)] sm:min-h-[165px] sm:px-3 sm:py-4"
                     >
-                      {/* Huy hiệu lớp trưởng */}
+                      
+                  {/* Huy hiệu lớp trưởng */}
                       {isMonitor && (
-                        <div
-                          title="Lớp trưởng"
-                          className="absolute right-2 top-2 text-[#e5a52d]"
-                        >
-                          <Crown className="h-4 w-4 fill-current" />
-                        </div>
+                      <div
+                        title="Lớp trưởng"
+                        aria-label="Lớp trưởng"
+                        className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#fff1d6] text-[#b77916] ring-1 ring-[#f2d69b]"
+  >
+                          <ShieldCheck className="h-4 w-4" />
+                      </div>
                       )}
-
                       {/* Avatar và khung ảnh */}
                       <div className="relative mb-2.5 h-12 w-12 shrink-0 sm:h-14 sm:w-14">
                         {frame && (
