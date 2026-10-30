@@ -242,6 +242,22 @@
   --rainbow-purple: #9c27b0;
 }
 
+.rainbow-card {
+  position: relative;
+  overflow: hidden;
+  background: #FFFFFF;
+  color: #1E1E1E;
+  border: 2px solid #111111;
+  border-radius: 22px;
+  box-shadow: 3px 3px 0 #111111;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.rainbow-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #111111;
+}
+
 @layer components {
   .rainbow-outline {
     border: 2px solid #111111;
