@@ -231,3 +231,70 @@
   color: hsl(25 15% 60%);
   opacity: 1;
 }
+
+/* Rainbow Yearbook — black outline style */
+:root {
+  --rainbow-red: #ff4d4d;
+  --rainbow-orange: #ff9800;
+  --rainbow-yellow: #ffd600;
+  --rainbow-green: #4caf50;
+  --rainbow-blue: #2196f3;
+  --rainbow-purple: #9c27b0;
+}
+
+@layer components {
+  .rainbow-outline {
+    border: 2px solid #111111;
+    border-radius: 1rem;
+    box-shadow: 3px 3px 0 #111111;
+  }
+
+  .rainbow-button {
+    color: #111111;
+    border: 2px solid #111111;
+    border-radius: 999px;
+    background: linear-gradient(
+      100deg,
+      #ff4d4d 0%,
+      #ff9800 20%,
+      #ffd600 40%,
+      #4caf50 60%,
+      #2196f3 80%,
+      #9c27b0 100%
+    );
+    font-weight: 800;
+    box-shadow: 3px 3px 0 #111111;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .rainbow-button:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 #111111;
+  }
+
+  .rainbow-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #111111;
+  }
+
+  .rainbow-text {
+    color: transparent;
+    background: linear-gradient(
+      90deg,
+      #ff4d4d,
+      #ff9800,
+      #ffd600,
+      #4caf50,
+      #2196f3,
+      #9c27b0
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-button {
+    transition: none;
+  }
+}
