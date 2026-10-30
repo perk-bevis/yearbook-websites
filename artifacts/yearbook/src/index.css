@@ -48,73 +48,86 @@
   --radius-3xl: calc(var(--radius) + 12px);
 }
 
+
 :root {
-  --background: 40 33% 98%;
-  --foreground: 20 20% 20%;
+  /* Nền và chữ */
+  --background: 42 35% 96%;
+  --foreground: 255 15% 19%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 20 20% 20%;
-  --card-border: 40 15% 92%;
+  /* Thẻ nội dung */
+  --card: 40 40% 99%;
+  --card-foreground: 255 15% 19%;
+  --card-border: 38 25% 89%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 20 20% 20%;
-  --popover-border: 40 15% 92%;
+  /* Popover / menu nổi */
+  --popover: 40 40% 99%;
+  --popover-foreground: 255 15% 19%;
+  --popover-border: 38 25% 89%;
 
-  --primary: 9 85% 62%;
+  /* Tím lavender — màu chủ đạo */
+  --primary: 258 45% 52%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 195 75% 85%;
-  --secondary-foreground: 195 85% 25%;
+  /* Xanh bạc hà */
+  --secondary: 145 35% 88%;
+  --secondary-foreground: 153 35% 27%;
 
-  --muted: 40 20% 94%;
-  --muted-foreground: 25 15% 45%;
+  /* Nền phụ */
+  --muted: 40 25% 92%;
+  --muted-foreground: 255 8% 43%;
 
-  --accent: 42 95% 65%;
-  --accent-foreground: 20 40% 15%;
+  /* Vàng bơ — màu nhấn */
+  --accent: 44 85% 78%;
+  --accent-foreground: 255 18% 20%;
 
-  --destructive: 0 84% 60%;
+  /* Cảnh báo / lỗi */
+  --destructive: 0 65% 53%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 40 15% 90%;
-  --input: 40 15% 90%;
-  --ring: 9 85% 62%;
+  /* Viền và focus */
+  --border: 38 22% 87%;
+  --input: 38 22% 87%;
+  --ring: 258 45% 52%;
 
   --radius: 1rem;
   --app-font-sans: 'Plus Jakarta Sans', sans-serif;
   --app-font-display: 'Caveat', cursive;
 }
 
+
 .dark {
-  --background: 20 15% 15%;
-  --foreground: 40 20% 95%;
+  --background: 255 14% 13%;
+  --foreground: 40 25% 94%;
 
-  --card: 20 15% 18%;
-  --card-foreground: 40 20% 95%;
-  --card-border: 20 15% 25%;
+  --card: 255 13% 17%;
+  --card-foreground: 40 25% 94%;
+  --card-border: 255 10% 25%;
 
-  --popover: 20 15% 18%;
-  --popover-foreground: 40 20% 95%;
-  --popover-border: 20 15% 25%;
+  --popover: 255 13% 17%;
+  --popover-foreground: 40 25% 94%;
+  --popover-border: 255 10% 25%;
 
-  --primary: 9 85% 65%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 258 55% 72%;
+  --primary-foreground: 255 20% 15%;
 
-  --secondary: 195 40% 30%;
-  --secondary-foreground: 195 75% 90%;
+  --secondary: 150 25% 28%;
+  --secondary-foreground: 145 35% 90%;
 
-  --muted: 20 10% 25%;
-  --muted-foreground: 40 15% 70%;
+  --muted: 255 10% 23%;
+  --muted-foreground: 40 12% 72%;
 
-  --accent: 42 80% 50%;
-  --accent-foreground: 20 20% 10%;
+  --accent: 44 55% 48%;
+  --accent-foreground: 255 20% 12%;
 
-  --destructive: 0 70% 50%;
+  --destructive: 0 60% 48%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 20 15% 28%;
-  --input: 20 15% 28%;
-  --ring: 9 85% 65%;
+  --border: 255 10% 27%;
+  --input: 255 10% 27%;
+  --ring: 258 55% 72%;
 }
+
+
 
 @layer base {
   * {
