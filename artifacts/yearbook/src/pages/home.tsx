@@ -245,6 +245,23 @@ const scrollYearbooks = (direction: "left" | "right") => {
     ? events.slice(0, 3)
     : [];
 
+    const upcomingEvents = Array.isArray(events)
+    ? events
+        .filter((event) => {
+          const eventDate = new Date(event.event_date);
+          return (
+            !Number.isNaN(eventDate.getTime()) &&
+            eventDate >= new Date()
+          );
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.event_date).getTime() -
+            new Date(b.event_date).getTime(),
+        )
+        .slice(0, 3)
+    : [];
+
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-[1400px] space-y-7 px-4 py-5 sm:px-6 sm:py-7">
@@ -322,135 +339,123 @@ const scrollYearbooks = (direction: "left" | "right") => {
           </section>
         )}
 
-        {/* Kỷ yếu gần đây */}
         
-{/* Kỷ yếu gần đây */}
+{/* Sự kiện sắp tới */}
 <section>
   <div className="mb-4 flex items-end justify-between gap-3">
     <div className="min-w-0">
       <h2 className="text-lg font-bold tracking-tight sm:text-xl">
-        Kỷ yếu gần đây
+        Sự kiện sắp tới
       </h2>
       <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-        Những không gian lưu giữ kỷ niệm của bạn.
+        Những dịp để cả lớp cùng gặp lại nhau.
       </p>
     </div>
 
-    {!yearbooksLoading && yearbooks.length > 0 && (
-      <div className="flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Kỷ yếu trước"
-          className="h-9 w-9 rounded-full"
-          onClick={() => scrollYearbooks("left")}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Kỷ yếu tiếp theo"
-          className="h-9 w-9 rounded-full"
-          onClick={() => scrollYearbooks("right")}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    )}
+    <Link
+      href="/events"
+      className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline sm:text-sm"
+    >
+      Xem tất cả sự kiện
+      <ArrowRight className="h-4 w-4" />
+    </Link>
   </div>
 
-  {yearbooksLoading ? (
-    <div className="flex gap-4 overflow-hidden">
+  {eventsLoading ? (
+    <div className="space-y-3">
       {[1, 2, 3].map((item) => (
         <div
           key={item}
-          className="w-[280px] shrink-0 overflow-hidden rounded-xl border border-border/60 sm:w-[320px]"
+          className="flex gap-4 rounded-xl border border-border/60 bg-card p-4"
         >
-          <Skeleton className="h-32 rounded-none sm:h-36" />
-          <div className="space-y-3 p-3">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="h-[76px] w-[68px] shrink-0 rounded-lg" />
+          <div className="flex-1 space-y-3 py-1">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-3 w-full" />
           </div>
         </div>
       ))}
     </div>
-  ) : yearbooks.length > 0 ? (
-    <motion.div
-      ref={yearbooksTrackRef}
-      variants={{
-        hidden: { opacity: 0 },
-        show: {
-          opacity: 1,
-          transition: { staggerChildren: 0.07 },
-        },
-      }}
-      initial="hidden"
-      animate="show"
-      className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
-      style={{ scrollbarWidth: "none" }}
-    >
-      {yearbooks.slice(0, 6).map((item, index) => (
-        <motion.div
-          key={item.id ?? item.slug ?? index}
-          variants={fadeUp}
-          className="w-[280px] min-w-0 shrink-0 snap-start sm:w-[320px]"
-        >
-          <YearbookCard item={item} />
-        </motion.div>
-      ))}
-    </motion.div>
+  ) : upcomingEvents.length > 0 ? (
+    <div className="space-y-3">
+      {upcomingEvents.map((event) => {
+        const eventDate = new Date(event.event_date);
+
+        return (
+          <motion.div
+            key={event.id}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="group flex min-w-0 gap-3 rounded-xl border border-border/70 bg-card p-3 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md sm:gap-4 sm:p-4"
+          >
+            <div className="flex h-[76px] w-[68px] shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary sm:h-[84px] sm:w-[76px]">
+              <span className="text-[10px] font-semibold uppercase tracking-wide">
+                {format(eventDate, "MMM", { locale: vi })}
+              </span>
+              <span className="text-2xl font-bold leading-tight">
+                {format(eventDate, "dd")}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {format(eventDate, "yyyy")}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1 py-0.5">
+              <h3 className="line-clamp-1 text-sm font-bold transition-colors group-hover:text-primary sm:text-base">
+                {event.title}
+              </h3>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {format(eventDate, "EEEE, dd/MM/yyyy", {
+                  locale: vi,
+                })}
+              </p>
+
+              {event.description ? (
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm">
+                  {event.description}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Một dịp đáng nhớ của tập thể.
+                </p>
+              )}
+            </div>
+
+            <div className="hidden shrink-0 items-center sm:flex">
+              <Calendar className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
   ) : (
-    <div className="rounded-xl border border-border/70 bg-card px-5 py-8 text-center">
-      <BookOpen className="mx-auto h-8 w-8 text-primary/70" />
+    <div className="rounded-xl border border-dashed border-border/70 bg-card px-5 py-9 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Calendar className="h-6 w-6" />
+      </div>
 
       <h3 className="mt-3 font-semibold">
-        {yearbooksError
-          ? "Chưa thể tải danh sách kỷ yếu"
-          : "Bắt đầu tạo kỷ yếu của bạn"}
+        Chưa có sự kiện sắp tới
       </h3>
 
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        {yearbooksError
-          ? "Bạn có thể thử tải lại hoặc mở trang quản lý kỷ yếu."
-          : "Tạo một không gian riêng để lưu giữ ảnh, kỷ niệm và câu chuyện của lớp."}
+      <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+        Những buổi họp lớp, ngày hội ngộ và hoạt động mới sẽ xuất hiện ở đây.
       </p>
 
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {yearbooksError && (
-          <Button
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Tải lại
-          </Button>
-        )}
-
-        <Link href="/yearbooks/mine">
-          <Button className="rounded-lg">
-            <Plus className="mr-2 h-4 w-4" />
-            Đến trang kỷ yếu
-          </Button>
-        </Link>
-      </div>
+      <Link
+        href="/events"
+        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+      >
+        Khám phá lịch sự kiện
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   )}
-
-  {/* Nút xem danh sách kỷ yếu */}
-  <div className="mt-4 flex justify-center">
-    <Link href="/yearbooks/mine">
-      <Button variant="outline" className="rounded-lg text-xs">
-        Xem danh sách kỷ yếu
-        <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
-    </Link>
-  </div>
 </section>
+
 
 
         {/* Hoạt động mới nhất */}
