@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -148,7 +147,7 @@ export default function Events() {
         ].map((item) => (
           <div
             key={item.label}
-            className="rounded-2xl border bg-card p-5"
+            className="rainbow-card relative overflow-hidden p-5"
           >
             <p className="text-sm text-muted-foreground">
               {item.label}
