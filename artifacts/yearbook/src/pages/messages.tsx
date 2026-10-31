@@ -444,7 +444,7 @@ export default function Messages() {
       </Show>
 
       <Show when="signed-in">
-        <div className="min-h-[100dvh] md:min-h-0 flex flex-col bg-[#FFFDF7] md:h-[75vh] md:rounded-3xl border border-[#E8E0CC] overflow-hidden shadow-sm">
+        <div className="min-h-[100dvh] md:min-h-0 flex flex-col md:flex-row bg-[#FFFDF7] md:h-[75vh] md:rounded-3xl border border-[#E8E0CC] overflow-hidden shadow-sm">
           {/* Mobile Messenger-style inbox header */}
           {!partnerId && !groupId && (
             <div className="md:hidden bg-[#FFFDF7]">
@@ -489,7 +489,7 @@ export default function Messages() {
           )}
 
           {/* Left sidebar — conversation list */}
-          <div className={`w-full md:w-80 flex flex-col border-r shrink-0 ${partnerId || groupId ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`w-full md:w-80 md:h-full min-h-0 flex flex-col border-r border-[#E8E0CC] shrink-0 ${partnerId || groupId ? 'hidden md:flex' : 'flex'}`}>
             <div className="hidden md:block p-4 border-b border-[#E8E0CC]">
               <div className="flex items-center justify-between mb-3">
                 <Link href="/" className="font-bold text-lg hover:text-[#B8862F] transition-colors">Kỷ Yếu Lớp 9A</Link>
@@ -625,7 +625,7 @@ export default function Messages() {
           </div>
 
           {/* Right — message thread */}
-          <div className={`flex-1 flex flex-col ${!partnerId && !groupId ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`flex-1 min-w-0 min-h-0 md:h-full flex flex-col ${!partnerId && !groupId ? 'hidden md:flex' : 'flex'}`}>
             {!partnerId && !groupId ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
                 <MessageCircle className="w-12 h-12 opacity-30" />
@@ -662,7 +662,7 @@ export default function Messages() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
                   {(groupId ? groupMessages : messages).map(msg => {
                     const isMine = msg.sender_id === user?.id;
                     const attachment = parseAttachment(msg.content);
